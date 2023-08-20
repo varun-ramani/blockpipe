@@ -1,7 +1,7 @@
 use clap::Parser;
 use nom::IResult;
 
-use crate::language::parser::Expression;
+use crate::language::parse::{ast::Expression, parser::parse_from_string};
 
 #[derive(Parser, Debug)]
 pub struct ParserArgs {
@@ -18,7 +18,7 @@ pub fn parse_file(filename: &str) -> Result<Expression, String> {
         Err(err) => return Err(err.to_string())
     };
 
-    match Expression::parse_from_string(&file_data) {
+    match parse_from_string(&file_data) {
         Ok(expression) => Ok(expression),
         Err(parser_error) => Err(parser_error.to_string())
     }
