@@ -1,6 +1,7 @@
 mod block;
 mod pipe;
 mod literal;
+mod tuple;
 
 use nom::character::complete::multispace0;
 use nom::{IResult, sequence::delimited};
@@ -8,6 +9,7 @@ use nom::branch::alt;
 
 use self::block::parse_block;
 use self::literal::parse_literal;
+use self::tuple::parse_tuple;
 
 use super::{ast::Expression, error::ParserError};
 
@@ -24,7 +26,7 @@ pub fn parse_from_string(input: &str) -> Result<Expression, ParserError> {
 
 /// this is the root function that parses expressions
 pub fn parse(input: &str) -> IResult<&str, Expression> {
-    let res = alt((parse_literal, parse_block))(input)?;
+    let res = alt((parse_literal, parse_block, parse_tuple))(input)?;
     Ok(res)
 }
 
