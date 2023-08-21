@@ -1,10 +1,13 @@
 use nom::{
     branch::alt,
+    bytes::complete::escaped,
+    bytes::complete::tag,
     character::complete::char,
-    character::complete::{digit0, digit1},
+    character::complete::{digit0, digit1, one_of, satisfy},
     combinator::{fail, recognize},
     combinator::{map_res, opt},
-    sequence::{pair, separated_pair},
+    multi::many0,
+    sequence::{delimited, pair, separated_pair},
     IResult,
 };
 
@@ -59,11 +62,20 @@ fn parse_float(input: &str) -> IResult<&str, Expression> {
 
 /// TODO implement string parsing
 pub fn parse_string(input: &str) -> IResult<&str, Expression> {
-    fail(input)
+    let content_parser =
+        delimited(tag("\""), many0(satisfy(|char| char != '"')), tag("\""));
+    let escape_parser = one_of(r#"""#);
+    let (input, string) = escaped(content_parser, '\\', escape_parser)(input)?;
+    Ok((
+        input,
+        Expression::Literal(LiteralType::Str(string.to_owned())),
+    ))
 }
 
 #[cfg(test)]
 mod tests {
+    use indoc::indoc;
+
     use crate::language::parse::{
         ast::{Expression, LiteralType},
         parser::parse_from_string,
@@ -98,24 +110,49 @@ mod tests {
     #[test]
     fn positive_float_nothing_after_point() {
         let (_, expr) = parse_literal(" 10. ").expect("Failed to parse: ");
-        assert_eq!(expr, Expression::Literal(LiteralType::Float(10.)))       
+        assert_eq!(expr, Expression::Literal(LiteralType::Float(10.)))
     }
 
     #[test]
     fn positive_float_nothing_before_point() {
         let (_, expr) = parse_literal(" .10 ").expect("Failed to parse: ");
-        assert_eq!(expr, Expression::Literal(LiteralType::Float(0.1)))       
+        assert_eq!(expr, Expression::Literal(LiteralType::Float(0.1)))
     }
 
     #[test]
     fn negative_float_nothing_after_point() {
         let (_, expr) = parse_literal(" -10. ").expect("Failed to parse: ");
-        assert_eq!(expr, Expression::Literal(LiteralType::Float(-10.)))       
+        assert_eq!(expr, Expression::Literal(LiteralType::Float(-10.)))
     }
 
     #[test]
     fn negative_float_nothing_before_point() {
         let (_, expr) = parse_literal(" -.10 ").expect("Failed to parse: ");
-        assert_eq!(expr, Expression::Literal(LiteralType::Float(-0.1)))       
+        assert_eq!(expr, Expression::Literal(LiteralType::Float(-0.1)))
+    }
+
+    #[test]
+    fn basic_string() {
+        let (_, expr) = parse_literal(indoc! {r#"
+            "abc"
+        "#})
+        .expect("Failed to parse: ");
+        assert_eq!(
+            expr,
+            Expression::Literal(LiteralType::Str(r#""abc""#.to_owned()))
+        )
+    }
+
+    // TODO make this test pass
+    #[test]
+    fn escaped_string() {
+        let (_, expr) = parse_literal(indoc! {r#"
+            "a\"b"
+        "#})
+        .expect("Failed to parse: ");
+        assert_eq!(
+            expr,
+            Expression::Literal(LiteralType::Str(r#""a\"b""#.to_owned()))
+        )
     }
 }
