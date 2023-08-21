@@ -18,3 +18,46 @@ pub fn parse_tuple(input: &str) -> IResult<&str, Expression> {
     Ok((input, Expression::Tuple(expressions)))
 }
 
+#[cfg(test)]
+mod tests {
+    use indoc::indoc;
+
+    use crate::language::parse::{ast::Expression, parser::tuple::parse_tuple};
+
+    #[test]
+    fn empty_tuple() {
+        let (_, expr) = parse_tuple(indoc! {r"
+            ( )
+        "})
+        .expect("Failed to parse: ");
+        assert_eq!(expr, Expression::Tuple(vec![]))
+    }
+
+    #[test]
+    fn nested_tuple() {
+        let (_, expr) = parse_tuple(indoc! {r"
+            (( ) )
+        "})
+        .expect("Failed to parse: ");
+        assert_eq!(expr, Expression::Tuple(vec![Expression::Tuple(vec![])]))
+    }
+
+    #[test]
+    fn multiple_nested_tuple() {
+        let (_, expr) = parse_tuple(indoc! {r"
+            ( () (() ( ) ) )
+        "})
+        .expect("Failed to parse: ");
+        assert_eq!(
+            expr,
+            Expression::Tuple(vec![
+                Expression::Tuple(vec![]),
+                Expression::Tuple(vec![
+                    Expression::Tuple(vec![]),
+                    Expression::Tuple(vec![])
+                ])
+            ])
+        )
+    }
+}
+
