@@ -17,3 +17,46 @@ pub fn parse_block(input: &str) -> IResult<&str, Expression> {
     )(input)?;
     Ok((input, Expression::Block(expressions)))
 }
+
+#[cfg(test)]
+mod tests {
+    use indoc::indoc;
+
+    use crate::language::parse::{ast::Expression, parser::block::parse_block};
+
+    #[test]
+    fn empty_block() {
+        let (_, expr) = parse_block(indoc! {r"
+            { }
+        "})
+        .expect("Failed to parse: ");
+        assert_eq!(expr, Expression::Block(vec![]))
+    }
+
+    #[test]
+    fn nested_block() {
+        let (_, expr) = parse_block(indoc! {r"
+            { {} }
+        "})
+        .expect("Failed to parse: ");
+        assert_eq!(expr, Expression::Block(vec![Expression::Block(vec![])]))
+    }
+
+    #[test]
+    fn multiple_nested_block() {
+        let (_, expr) = parse_block(indoc! {r"
+            { {} {{} { } } }
+        "})
+        .expect("Failed to parse: ");
+        assert_eq!(
+            expr,
+            Expression::Block(vec![
+                Expression::Block(vec![]),
+                Expression::Block(vec![
+                    Expression::Block(vec![]),
+                    Expression::Block(vec![])
+                ])
+            ])
+        )
+    }
+}
