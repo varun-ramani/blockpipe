@@ -61,3 +61,61 @@ fn parse_float(input: &str) -> IResult<&str, Expression> {
 pub fn parse_string(input: &str) -> IResult<&str, Expression> {
     fail(input)
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::language::parse::{
+        ast::{Expression, LiteralType},
+        parser::parse_from_string,
+    };
+
+    use super::parse_literal;
+
+    #[test]
+    fn positive_integer() {
+        let (_, expr) = parse_literal(" 10 ").expect("Failed to parse: ");
+        assert_eq!(expr, Expression::Literal(LiteralType::Int(10)));
+    }
+
+    #[test]
+    fn negative_integer() {
+        let (_, expr) = parse_literal(" -10 ").expect("Failed to parse: ");
+        assert_eq!(expr, Expression::Literal(LiteralType::Int(-10)))
+    }
+
+    #[test]
+    fn positive_float() {
+        let (_, expr) = parse_literal(" 1.0 ").expect("Failed to parse: ");
+        assert_eq!(expr, Expression::Literal(LiteralType::Float(1.0)))
+    }
+
+    #[test]
+    fn negative_float() {
+        let (_, expr) = parse_literal(" -1.0 ").expect("Failed to parse: ");
+        assert_eq!(expr, Expression::Literal(LiteralType::Float(-1.0)))
+    }
+
+    #[test]
+    fn positive_float_nothing_after_point() {
+        let (_, expr) = parse_literal(" 10. ").expect("Failed to parse: ");
+        assert_eq!(expr, Expression::Literal(LiteralType::Float(10.)))       
+    }
+
+    #[test]
+    fn positive_float_nothing_before_point() {
+        let (_, expr) = parse_literal(" .10 ").expect("Failed to parse: ");
+        assert_eq!(expr, Expression::Literal(LiteralType::Float(0.1)))       
+    }
+
+    #[test]
+    fn negative_float_nothing_after_point() {
+        let (_, expr) = parse_literal(" -10. ").expect("Failed to parse: ");
+        assert_eq!(expr, Expression::Literal(LiteralType::Float(-10.)))       
+    }
+
+    #[test]
+    fn negative_float_nothing_before_point() {
+        let (_, expr) = parse_literal(" -.10 ").expect("Failed to parse: ");
+        assert_eq!(expr, Expression::Literal(LiteralType::Float(-0.1)))       
+    }
+}
