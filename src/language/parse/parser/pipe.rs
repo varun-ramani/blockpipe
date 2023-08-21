@@ -36,3 +36,140 @@ pub fn parse_pipe(input: &str) -> IResult<&str, Expression> {
         Expression::Pipe(Box::from(expr1), pipe_type, Box::from(expr2)),
     ))
 }
+
+#[cfg(test)]
+mod tests {
+    use indoc::indoc;
+
+    use crate::language::parse::{
+        ast::{Expression, LiteralType, PipeType},
+        parser::parse_from_string,
+    };
+
+    use super::parse_pipe;
+
+    #[test]
+    fn basic_flow_pipe() {
+        let (_, expr) = parse_pipe(indoc! {r"
+            10 | {}
+        "})
+        .expect("Failed to parse: ");
+        assert_eq!(
+            expr,
+            Expression::Pipe(
+                Box::new(Expression::Literal(LiteralType::Int(10))),
+                PipeType::Flow,
+                Box::new(Expression::Block(vec![]))
+            )
+        )
+    }
+
+    #[test]
+    fn basic_destructure_pipe() {
+        let (_, expr) = parse_pipe(indoc! {r"
+            10 |* {}
+        "})
+        .expect("Failed to parse: ");
+        assert_eq!(
+            expr,
+            Expression::Pipe(
+                Box::new(Expression::Literal(LiteralType::Int(10))),
+                PipeType::Destructure,
+                Box::new(Expression::Block(vec![]))
+            )
+        )
+    }
+
+    #[test]
+    fn flow_pipeline() {
+        let expr = parse_from_string::<Expression>(indoc! {r"
+            1 | {2} | {3} | {4}
+        "})
+        .expect("Failed to parse: ");
+
+        assert_eq!(
+            expr,
+            Expression::Pipe(
+                Box::new(Expression::Literal(LiteralType::Int(1))),
+                PipeType::Flow,
+                Box::new(Expression::Pipe(
+                    Box::new(Expression::Block(vec![Expression::Literal(
+                        LiteralType::Int(2)
+                    )])),
+                    PipeType::Flow,
+                    Box::new(Expression::Pipe(
+                        Box::new(Expression::Block(vec![Expression::Literal(
+                            LiteralType::Int(3)
+                        )])),
+                        PipeType::Flow,
+                        Box::new(Expression::Block(vec![Expression::Literal(
+                            LiteralType::Int(4)
+                        )]))
+                    ))
+                ))
+            )
+        )
+    }
+
+    #[test]
+    fn destructure_pipeline() {
+        let expr = parse_from_string::<Expression>(indoc! {r"
+            1 |* {2} |* {3} |* {4}
+        "})
+        .expect("Failed to parse: ");
+
+        assert_eq!(
+            expr,
+            Expression::Pipe(
+                Box::new(Expression::Literal(LiteralType::Int(1))),
+                PipeType::Destructure,
+                Box::new(Expression::Pipe(
+                    Box::new(Expression::Block(vec![Expression::Literal(
+                        LiteralType::Int(2)
+                    )])),
+                    PipeType::Destructure,
+                    Box::new(Expression::Pipe(
+                        Box::new(Expression::Block(vec![Expression::Literal(
+                            LiteralType::Int(3)
+                        )])),
+                        PipeType::Destructure,
+                        Box::new(Expression::Block(vec![Expression::Literal(
+                            LiteralType::Int(4)
+                        )]))
+                    ))
+                ))
+            )
+        )
+    }
+
+    #[test]
+    fn heterogenous_pipeline() {
+        let (_, expr) = parse_pipe(indoc! {r"
+            5 |* {} | {} | {(10 20) |* {}} 
+        "})
+        .expect("Failed to parse: ");
+        assert_eq!(
+            expr,
+            Expression::Pipe(
+                Box::new(Expression::Literal(LiteralType::Int(5))),
+                PipeType::Destructure,
+                Box::new(Expression::Pipe(
+                    Box::new(Expression::Block(vec![])),
+                    PipeType::Flow,
+                    Box::new(Expression::Pipe(
+                        Box::new(Expression::Block(vec![])),
+                        PipeType::Flow,
+                        Box::new(Expression::Block(vec![Expression::Pipe(
+                            Box::new(Expression::Tuple(vec![
+                                Expression::Literal(LiteralType::Int(10)),
+                                Expression::Literal(LiteralType::Int(20))
+                            ])),
+                            PipeType::Destructure,
+                            Box::new(Expression::Block(vec![]))
+                        )]))
+                    ))
+                ))
+            )
+        )
+    }
+}
