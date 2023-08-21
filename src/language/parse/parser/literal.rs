@@ -4,8 +4,7 @@ use nom::{
     bytes::complete::tag,
     character::complete::char,
     character::complete::{digit0, digit1, one_of, satisfy},
-    combinator::{fail, recognize},
-    combinator::{map_res, opt},
+    combinator::opt,
     multi::many0,
     sequence::{delimited, pair, separated_pair},
     IResult,
@@ -76,10 +75,7 @@ pub fn parse_string(input: &str) -> IResult<&str, Expression> {
 mod tests {
     use indoc::indoc;
 
-    use crate::language::parse::{
-        ast::{Expression, LiteralType},
-        parser::parse_from_string,
-    };
+    use crate::language::parse::ast::{Expression, LiteralType};
 
     use super::parse_literal;
 

@@ -2,9 +2,8 @@ use core::panic;
 
 use nom::branch::alt;
 use nom::bytes::complete::tag;
-use nom::character::complete::char;
-use nom::combinator::fail;
-use nom::sequence::{delimited, separated_pair, tuple};
+
+use nom::sequence::tuple;
 use nom::IResult;
 
 use crate::language::parse::ast::Expression;

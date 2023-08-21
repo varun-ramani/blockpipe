@@ -1,25 +1,25 @@
-mod language;
 mod command;
+mod language;
 
 use clap::{Parser, Subcommand};
-use command::parse::{ParserArgs, parser_standalone};
+use command::parse::{parser_standalone, ParserArgs};
 
 #[derive(Subcommand, Debug)]
 enum Command {
-    Parse(ParserArgs)
+    Parse(ParserArgs),
 }
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = "bruh")]
 struct Arguments {
     #[command(subcommand)]
-    command: Command
+    command: Command,
 }
 
 fn main() {
     let cli = Arguments::parse();
 
     match &cli.command {
-        Command::Parse(parser_args) => parser_standalone(parser_args)
+        Command::Parse(parser_args) => parser_standalone(parser_args),
     }
 }

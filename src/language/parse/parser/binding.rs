@@ -9,4 +9,3 @@ pub fn parse_binding(input: &str) -> IResult<&str, Expression> {
 
     Ok((input, Expression::Binding(identifier)))
 }
-

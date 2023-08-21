@@ -67,5 +67,4 @@ mod tests {
 
     test_reflect_input!(longest_id, "_1bab2ak2j__ank2j3k1bsh__2k3k1ba__");
     test_fail_parse!(longest_id_bad, "1__");
-
 }

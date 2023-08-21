@@ -1,8 +1,8 @@
 //! Contains code to parse tuples, which are basically blocks but delimated by ()
 
-use nom::{IResult, sequence::delimited};
 use nom::character::complete::char;
 use nom::multi::many0;
+use nom::{sequence::delimited, IResult};
 
 use crate::language::parse::ast::Expression;
 
@@ -60,4 +60,3 @@ mod tests {
         )
     }
 }
-

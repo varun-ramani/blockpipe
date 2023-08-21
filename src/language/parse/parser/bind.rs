@@ -23,7 +23,6 @@ mod tests {
     use crate::language::{
         parse::ast::Expression,
         parse::ast::{Identifier, LiteralType, PipeType},
-        parse::parser::parse_from_string,
     };
 
     use super::parse_bind;

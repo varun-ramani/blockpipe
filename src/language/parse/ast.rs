@@ -1,6 +1,5 @@
-//! The definition of the abstract syntax tree (AST) lives 
-//! inside this file. 
-
+//! The definition of the abstract syntax tree (AST) lives
+//! inside this file.
 
 #[derive(Debug, PartialEq)]
 /// The root node; all blockpipe programs are actually just expressions within
@@ -11,7 +10,7 @@ pub enum Expression {
     Tuple(Vec<Expression>),
     Literal(LiteralType),
     Bind(Identifier, Box<Expression>),
-    Binding(Identifier)
+    Binding(Identifier),
 }
 
 /// Blockpipe supports string, integer, and float literals.
@@ -27,8 +26,8 @@ pub enum LiteralType {
 #[derive(Debug, PartialEq)]
 pub enum PipeType {
     Destructure,
-    Flow
+    Flow,
 }
 
-/// We're just going to redefine the String datatype for clarity 
+/// We're just going to redefine the String datatype for clarity
 pub type Identifier = String;

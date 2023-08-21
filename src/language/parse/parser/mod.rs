@@ -1,10 +1,10 @@
 mod bind;
+mod binding;
 mod block;
 mod identifier;
 mod literal;
 mod pipe;
 mod tuple;
-mod binding;
 
 use nom::branch::alt;
 use nom::character::complete::multispace0;
@@ -46,7 +46,7 @@ impl ParseRoot for Expression {
             parse_block,
             parse_tuple,
             parse_bind,
-            parse_binding
+            parse_binding,
         )))(input)?;
         Ok(res)
     }
