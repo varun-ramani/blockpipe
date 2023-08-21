@@ -9,7 +9,8 @@ pub enum Expression {
     Block(Vec<Expression>),
     Pipe(Box<Expression>, PipeType, Box<Expression>),
     Tuple(Vec<Expression>),
-    Literal(LiteralType)
+    Literal(LiteralType),
+    Bind(Identifier, Box<Expression>)
 }
 
 /// Blockpipe supports string, integer, and float literals.
@@ -27,3 +28,6 @@ pub enum PipeType {
     Destructure,
     Flow
 }
+
+/// We're just going to redefine the String datatype for clarity 
+pub type Identifier = String;

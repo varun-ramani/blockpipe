@@ -13,13 +13,13 @@ use crate::language::parse::ast::PipeType;
 use super::block::parse_block;
 use super::literal::parse_literal;
 use super::tuple::parse_tuple;
-use super::{ignore_ws, parse};
+use super::{ignore_ws, ParseRoot};
 
 pub fn parse_pipe(input: &str) -> IResult<&str, Expression> {
     let (input, (expr1, pipe_char, expr2)) = ignore_ws(tuple((
         alt((parse_block, parse_tuple, parse_literal)),
         alt((tag("|*"), tag("|"))),
-        parse,
+        Expression::parse,
     )))(input)?;
 
     let pipe_type = match pipe_char {
