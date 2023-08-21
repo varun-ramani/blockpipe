@@ -5,17 +5,19 @@ use nom::{
 
 use crate::language::parse::ast::Identifier;
 
+use super::ignore_ws;
+
 /// Recognizes identifiers - a string of length at least one that must start
 /// with a letter or underscore, then contain any number of
 /// alphanumeric/underscore characters.
 pub fn parse_identifier(input: &str) -> IResult<&str, Identifier> {
-    let (input, token) = recognize(pair(
+    let (input, token) = ignore_ws(recognize(pair(
         satisfy(|c| c.is_alphabetic() || c == '_'),
         // TODO how do I clean the disgusting parameterization here?
         many0::<&str, char, nom::error::Error<&str>, _>(satisfy(|c| {
             c.is_alphanumeric() || c == '_'
         })),
-    ))(input)?;
+    )))(input)?;
 
     Ok((input, token.to_owned()))
 }

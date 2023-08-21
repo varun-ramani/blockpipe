@@ -2,7 +2,7 @@
 //! inside this file. 
 
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 /// The root node; all blockpipe programs are actually just expressions within
 /// expressions.
 pub enum Expression {
@@ -14,7 +14,7 @@ pub enum Expression {
 }
 
 /// Blockpipe supports string, integer, and float literals.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum LiteralType {
     Str(String),
     Int(i64),
@@ -23,7 +23,7 @@ pub enum LiteralType {
 
 /// If you want to pass multiple arguments to a closure, you'll have to pass
 /// them as a tuple through a destructure pipe.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum PipeType {
     Destructure,
     Flow
