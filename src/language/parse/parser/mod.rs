@@ -4,12 +4,14 @@ mod identifier;
 mod literal;
 mod pipe;
 mod tuple;
+mod binding;
 
 use nom::branch::alt;
 use nom::character::complete::multispace0;
 use nom::{sequence::delimited, IResult};
 
 use self::bind::parse_bind;
+use self::binding::parse_binding;
 use self::block::parse_block;
 use self::identifier::parse_identifier;
 use self::literal::parse_literal;
@@ -44,6 +46,7 @@ impl ParseRoot for Expression {
             parse_block,
             parse_tuple,
             parse_bind,
+            parse_binding
         )))(input)?;
         Ok(res)
     }

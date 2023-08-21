@@ -10,7 +10,8 @@ pub enum Expression {
     Pipe(Box<Expression>, PipeType, Box<Expression>),
     Tuple(Vec<Expression>),
     Literal(LiteralType),
-    Bind(Identifier, Box<Expression>)
+    Bind(Identifier, Box<Expression>),
+    Binding(Identifier)
 }
 
 /// Blockpipe supports string, integer, and float literals.
