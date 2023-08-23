@@ -10,6 +10,7 @@ pub enum Expression {
     Tuple(Vec<Expression>),
     Literal(LiteralType),
     Bind(Identifier, Box<Expression>),
+    TypeBind(Identifier, Box<Expression>),
     Binding(Identifier),
 }
 

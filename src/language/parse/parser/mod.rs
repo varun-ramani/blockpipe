@@ -5,6 +5,7 @@ mod identifier;
 mod literal;
 mod pipe;
 mod tuple;
+mod type_bind;
 
 use nom::branch::alt;
 use nom::character::complete::multispace0;
@@ -17,6 +18,7 @@ use self::identifier::parse_identifier;
 use self::literal::parse_literal;
 use self::pipe::parse_pipe;
 use self::tuple::parse_tuple;
+use self::type_bind::parse_type_bind;
 
 use super::ast::Identifier;
 use super::{ast::Expression, error::ParserError};
@@ -45,6 +47,7 @@ impl ParseRoot for Expression {
             parse_literal,
             parse_block,
             parse_tuple,
+            parse_type_bind,
             parse_bind,
             parse_binding,
         )))(input)?;

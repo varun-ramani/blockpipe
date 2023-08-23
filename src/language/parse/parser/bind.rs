@@ -1,16 +1,17 @@
 use nom::bytes::complete::tag;
-use nom::sequence::{pair, preceded};
+use nom::sequence::{pair, preceded, separated_pair};
 use nom::IResult;
 
 use crate::language::parse::ast::Expression;
 
 use super::identifier::parse_identifier;
-use super::ParseRoot;
+use super::{ParseRoot, ignore_ws};
 
 pub fn parse_bind(input: &str) -> IResult<&str, Expression> {
-    let (input, (identifier, expr)) = preceded(
-        tag("bind"),
-        pair(parse_identifier, Expression::parse),
+    let (input, (identifier, expr)) = separated_pair(
+        parse_identifier,
+        ignore_ws(tag(":")),
+        Expression::parse
     )(input)?;
 
     Ok((input, Expression::Bind(identifier, Box::new(expr))))
@@ -30,7 +31,7 @@ mod tests {
     #[test]
     fn integer() {
         let (_, expr) = parse_bind(indoc! {r"
-            bind name 20
+            name: 20
         "})
         .expect("Failed to parse: ");
         assert_eq!(
@@ -45,7 +46,7 @@ mod tests {
     #[test]
     fn float() {
         let (_, expr) = parse_bind(indoc! {r"
-            bind name 20.1
+            name: 20.1
         "})
         .expect("Failed to parse: ");
         assert_eq!(
@@ -60,7 +61,7 @@ mod tests {
     #[test]
     fn block() {
         let (_, expr) = parse_bind(indoc! {r"
-            bind name {10}
+            name: {10}
         "})
         .expect("Failed to parse: ");
         assert_eq!(
@@ -77,7 +78,7 @@ mod tests {
     #[test]
     fn tuple() {
         let (_, expr) = parse_bind(indoc! {r"
-            bind name (10 20 30)
+            name: (10 20 30)
         "})
         .expect("Failed to parse: ");
         assert_eq!(
@@ -96,7 +97,7 @@ mod tests {
     #[test]
     fn flow_pipe() {
         let (_, expr) = parse_bind(indoc! {r"
-            bind name 5 | {} 
+            name: 5 | {} 
         "})
         .expect("Failed to parse: ");
         assert_eq!(
@@ -115,7 +116,7 @@ mod tests {
     #[test]
     fn destructure_pipe() {
         let (_, expr) = parse_bind(indoc! {r"
-            bind name 5 |* {} 
+            name: 5 |* {} 
         "})
         .expect("Failed to parse: ");
         assert_eq!(
@@ -134,7 +135,7 @@ mod tests {
     #[test]
     fn pipeline() {
         let (_, expr) = parse_bind(indoc! {r"
-            bind name 5 |* {} | {} | {(10 20) |* {}} 
+            name: 5 |* {} | {} | {(10 20) |* {}} 
         "})
         .expect("Failed to parse: ");
         assert_eq!(
