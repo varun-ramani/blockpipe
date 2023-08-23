@@ -9,14 +9,24 @@ use nom::IResult;
 use crate::language::parse::ast::Expression;
 use crate::language::parse::ast::PipeType;
 
+use super::bind::parse_bind;
+use super::binding::parse_binding;
 use super::block::parse_block;
 use super::literal::parse_literal;
 use super::tuple::parse_tuple;
+use super::type_bind::parse_type_bind;
 use super::{ignore_ws, ParseRoot};
 
 pub fn parse_pipe(input: &str) -> IResult<&str, Expression> {
     let (input, (expr1, pipe_char, expr2)) = ignore_ws(tuple((
-        alt((parse_block, parse_tuple, parse_literal)),
+        alt((
+            parse_literal,
+            parse_block,
+            parse_tuple,
+            parse_type_bind,
+            parse_bind,
+            parse_binding,
+        )),
         alt((tag("|*"), tag("|"))),
         Expression::parse,
     )))(input)?;
@@ -41,7 +51,7 @@ mod tests {
     use indoc::indoc;
 
     use crate::language::parse::{
-        ast::{Expression, LiteralType, PipeType},
+        ast::{Expression, Identifier, LiteralType, PipeType},
         parser::parse_from_string,
     };
 
@@ -166,6 +176,34 @@ mod tests {
                             PipeType::Destructure,
                             Box::new(Expression::Block(vec![]))
                         )]))
+                    ))
+                ))
+            )
+        )
+    }
+
+    #[test]
+    fn pipeline_with_bindings() {
+        let (_, expr) = parse_pipe(indoc! {r"
+            (1 2) |* a_bc | e_FG | hij
+        "})
+        .expect("Failed to parse: ");
+
+        assert_eq!(
+            expr,
+            Expression::Pipe(
+                Box::new(Expression::Tuple(vec![
+                    Expression::Literal(LiteralType::Int(1)),
+                    Expression::Literal(LiteralType::Int(2)),
+                ])),
+                PipeType::Destructure,
+                Box::new(Expression::Pipe(
+                    Box::new(Expression::Binding(Identifier::from("a_bc"))),
+                    PipeType::Flow,
+                    Box::new(Expression::Pipe(
+                        Box::new(Expression::Binding(Identifier::from("e_FG"))),
+                        PipeType::Flow,
+                        Box::new(Expression::Binding(Identifier::from("hij")))
                     ))
                 ))
             )
