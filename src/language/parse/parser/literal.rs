@@ -4,10 +4,10 @@ use nom::{
     bytes::complete::tag,
     character::complete::char,
     character::complete::{digit0, digit1, one_of, satisfy},
-    combinator::opt,
+    combinator::{opt, recognize},
     multi::many0,
     sequence::{delimited, pair, separated_pair},
-    IResult,
+    IResult, Parser,
 };
 
 use crate::language::parse::ast::Expression;
@@ -17,7 +17,7 @@ use super::ignore_ws;
 
 pub fn parse_literal(input: &str) -> IResult<&str, Expression> {
     let (input, lit) =
-        ignore_ws(alt((parse_float, parse_integer, parse_string)))(input)?;
+        ignore_ws(alt((parse_float, parse_integer, parse_string, parse_bool)))(input)?;
     Ok((input, lit))
 }
 
@@ -57,6 +57,17 @@ fn parse_float(input: &str) -> IResult<&str, Expression> {
     };
 
     Ok((input, Expression::Literal(LiteralType::Float(signed_float))))
+}
+
+fn parse_bool(input: &str) -> IResult<&str, Expression> {
+    let (input, output) = recognize(alt(
+        (
+            tag("true"),
+            tag("false")
+        )
+    ))(input)?;
+
+    Ok((input, Expression::Literal(LiteralType::Bool(output.parse::<bool>().unwrap()))))
 }
 
 /// TODO implement string parsing
@@ -136,6 +147,30 @@ mod tests {
         assert_eq!(
             expr,
             Expression::Literal(LiteralType::Str(r#""abc""#.to_owned()))
+        )
+    }
+
+    #[test]
+    fn parse_true() {
+        let (_, expr) = parse_literal(indoc! {r#"
+            true
+        "#})
+        .expect("Failed to parse: ");
+        assert_eq!(
+            expr,
+            Expression::Literal(LiteralType::Bool(true))
+        )
+    }
+
+    #[test]
+    fn parse_false() {
+        let (_, expr) = parse_literal(indoc! {r#"
+            false
+        "#})
+        .expect("Failed to parse: ");
+        assert_eq!(
+            expr,
+            Expression::Literal(LiteralType::Bool(false))
         )
     }
 

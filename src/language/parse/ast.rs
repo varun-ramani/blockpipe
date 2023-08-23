@@ -20,6 +20,7 @@ pub enum LiteralType {
     Str(String),
     Int(i64),
     Float(f64),
+    Bool(bool)
 }
 
 /// If you want to pass multiple arguments to a closure, you'll have to pass
