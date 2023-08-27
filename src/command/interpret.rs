@@ -3,23 +3,38 @@ use std::fmt::Debug;
 use clap::{Parser, ValueEnum};
 
 use crate::language::{
-    interpret::{interpret_program, value::Value},
+    interpret::{
+        interpreter::{interpret_expression, interpret_program},
+        stack::InterpStack,
+        value::Value,
+    },
     parse::{
-        ast::{self, Expression},
-        parser::{parse_from_string, ParseRoot},
+        ast::{Expression},
+        parser::{parse_from_string},
     },
 };
 
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+enum InterpreterMode {
+    Expression,
+    Program,
+}
+
 #[derive(Parser, Debug)]
 pub struct InterpreterArgs {
+    #[arg(value_enum)]
+    mode: InterpreterMode,
     filename: String,
 }
 
 pub fn interpreter_standalone(interp_args: &InterpreterArgs) {
-    interp_file(&interp_args.filename);
+    println!(
+        "{:#?}",
+        interp_file(interp_args.mode, &interp_args.filename)
+    );
 }
 
-pub fn interp_file(filename: &str) -> Result<Value, String> {
+fn interp_file(mode: InterpreterMode, filename: &str) -> Result<Value, String> {
     let file_data = match std::fs::read_to_string(filename) {
         Ok(data) => data,
         Err(err) => return Err(err.to_string()),
@@ -30,5 +45,10 @@ pub fn interp_file(filename: &str) -> Result<Value, String> {
         Err(parser_error) => return Err(parser_error.to_string()),
     };
 
-    interpret_program(&parse_tree)
+    match mode {
+        InterpreterMode::Program => interpret_program(parse_tree),
+        InterpreterMode::Expression => {
+            interpret_expression(&mut InterpStack::new(), parse_tree)
+        }
+    }
 }

@@ -1,9 +1,15 @@
 #[derive(Debug, PartialEq)]
 pub enum Value {
     Closure(),
+
+    // A few built-in higher order 
+    // types
+    Tuple(Vec<Value>),
+    Bind(String, Box<Value>),
     
-    // Any piece of data evaluates to this type
-    Data(PrimitiveType),
+    // This is the most basic type of value that 
+    // everything else is composed from
+    Primitive(PrimitiveType),
 
     // This is the void datatype
     Unit 
@@ -14,5 +20,5 @@ pub enum PrimitiveType {
     Str(String),
     Int(i64),
     Float(f64),
-    Bool(bool)
+    Bool(bool),
 }
