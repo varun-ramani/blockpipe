@@ -13,3 +13,12 @@ pub struct InterpStack {
 pub struct StackFrame {
     pub identifiers: Vec<Identifier>
 }
+
+impl InterpStack {
+    pub fn new() -> InterpStack {
+        InterpStack {
+            frames: Vec::new(),
+            bindings: HashMap::new()
+        }
+    }
+}

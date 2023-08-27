@@ -1,16 +1,16 @@
 use nom::branch::alt;
 use nom::bytes::complete::tag;
-use nom::multi::{many0, many0_count};
-use nom::sequence::{delimited, pair, preceded, separated_pair};
+use nom::multi::{many0};
+use nom::sequence::{delimited, preceded, separated_pair};
 use nom::{IResult, Parser};
 
 use crate::language::parse::ast::Expression;
 
-use super::bind::parse_bind;
+
 use super::binding::parse_binding;
-use super::identifier::{self, parse_identifier};
-use super::tuple::parse_tuple;
-use super::{ignore_ws, ParseRoot};
+use super::identifier::{parse_identifier};
+
+use super::{ignore_ws};
 
 pub fn parse_type_bind(input: &str) -> IResult<&str, Expression> {
     let (input, expr) =

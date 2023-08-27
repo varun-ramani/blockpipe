@@ -2,11 +2,12 @@ mod command;
 mod language;
 
 use clap::{Parser, Subcommand};
-use command::parse::{parser_standalone, ParserArgs};
+use command::{parse::{parser_standalone, ParserArgs}, interpret::{InterpreterArgs, interpreter_standalone}};
 
 #[derive(Subcommand, Debug)]
 enum Command {
     Parse(ParserArgs),
+    Interpret(InterpreterArgs)
 }
 
 #[derive(Parser, Debug)]
@@ -21,5 +22,6 @@ fn main() {
 
     match &cli.command {
         Command::Parse(parser_args) => parser_standalone(parser_args),
+        Command::Interpret(args) => interpreter_standalone(args)
     }
 }
