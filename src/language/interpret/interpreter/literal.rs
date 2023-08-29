@@ -1,4 +1,4 @@
-use crate::language::{parse::ast::LiteralType, interpret::value::{Value, PrimitiveType, self}};
+use crate::language::{parse::ast::LiteralType, interpret::value::{Value, PrimitiveType}};
 
 pub fn interp_literal(literal_type: LiteralType) -> Result<Value, String> {
     match literal_type {
