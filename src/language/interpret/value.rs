@@ -39,6 +39,7 @@ impl Value {
         match cloned_self {
             Value::Unit => Ok(Value::Tuple(args)),
             Value::Primitive(data) => Ok(Value::Primitive(data)),
+            Value::Tuple(expressions) => Ok(Value::Tuple(expressions)),
             _ => Err("Unsupported by blockpipe".to_owned())
         }
     }
