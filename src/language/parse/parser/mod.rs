@@ -25,11 +25,16 @@ use super::{ast::Expression, error::ParserError};
 
 /// this is the parser "root". it is the only level of parsing in which we
 /// don't use nom.
-pub fn parse_from_string<T: ParseRoot>(input: &str) -> Result<T, ParserError> {
+pub fn parse_from_string<T: ParseRoot + std::fmt::Debug>(
+    input: &str,
+) -> Result<T, ParserError> {
     let res = T::parse(input);
     match res {
         Ok(("", expression)) => Ok(expression),
-        Ok(_) => Err(ParserError::Remainder),
+        Ok((r, expression)) => {
+            println!("{:?}", expression);
+            Err(ParserError::Remainder(r.to_owned()))
+        }
         Err(e) => Err(ParserError::NomError(e.to_string())),
     }
 }
