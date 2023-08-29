@@ -1,9 +1,10 @@
 mod literal;
 mod tuple;
+mod pipe;
 
 use crate::language::parse::ast::Expression;
 
-use self::{literal::interp_literal, tuple::interp_tuple};
+use self::{literal::interp_literal, tuple::interp_tuple, pipe::interp_pipe};
 
 use super::{stack::InterpStack, value::Value};
 
@@ -27,6 +28,7 @@ pub fn interpret_expression(
     match expr {
         Expression::Literal(literal_type) => interp_literal(literal_type),
         Expression::Tuple(expressions) => interp_tuple(stack, expressions),
-        _ => Err("Unsupported expression type".to_owned())
+        Expression::Pipe(e1, pipe_type, e2) => interp_pipe(stack, *e1, pipe_type, *e2),
+        e => return Err(format!("Unsupported expression type: {:#?}", e))
     }
 }

@@ -18,5 +18,9 @@ pub fn interp_tuple(
         Err(err) => return Err(err),
     };
 
-    Ok(Value::Tuple(values))
+    if values.len() == 0 {
+        Ok(Value::Unit)
+    } else {
+        Ok(Value::Tuple(values))
+    }
 }

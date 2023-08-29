@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use clap::{Parser, ValueEnum};
 
 use crate::language::parse::{
@@ -28,7 +30,7 @@ pub fn parser_standalone(parser_args: &ParserArgs) {
     }
 }
 
-pub fn parse_file<T: ParseRoot>(filename: &str) -> Result<T, String> {
+pub fn parse_file<T: ParseRoot + Debug>(filename: &str) -> Result<T, String> {
     let file_data = match std::fs::read_to_string(filename) {
         Ok(data) => data,
         Err(err) => return Err(err.to_string()),
