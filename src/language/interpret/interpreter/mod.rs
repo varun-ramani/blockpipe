@@ -2,12 +2,13 @@ mod bind;
 mod literal;
 mod pipe;
 mod tuple;
+mod binding;
 
 use crate::language::parse::ast::Expression;
 
 use self::{
     bind::interp_bind, literal::interp_literal, pipe::interp_pipe,
-    tuple::interp_tuple,
+    tuple::interp_tuple, binding::interp_binding,
 };
 
 use super::{stack::InterpStack, value::Value};
@@ -36,6 +37,7 @@ pub fn interpret_expression(
             interp_pipe(stack, *e1, pipe_type, *e2)
         }
         Expression::Bind(id, expr) => interp_bind(stack, id, *expr),
+        Expression::Binding(id) => interp_binding(stack, id),
         e => return Err(format!("Unsupported expression type: {:#?}", e)),
     }
 }
