@@ -108,6 +108,7 @@ impl Parser {
                 LiteralVariant::FloatLiteral(value.clone()),
             )),
             Token::LeftParen => self.parse_tuple(),
+            Token::LeftBrace => self.parse_block(),
             _ => Err((
                 "expression".to_string(),
                 "undefined error".to_string(),
@@ -139,6 +140,25 @@ impl Parser {
         }
 
         Ok(ASTNode::Tuple(ret_vec))
+    }
+
+    /// parse_block
+    /// 
+    /// Given a situation in which the current token is a left brace,
+    /// starts parsing a block from that location.
+    fn parse_block(&mut self) -> ParseResult {
+        self.consume_token("block", &Token::LeftBrace)?;
+        let mut ret_vec: Vec<ASTNode> = vec![];
+        loop {
+            if let (Token::RightBrace, _) = self.current_token("block")? {
+                self.consume_token("block", &Token::RightBrace)?;
+                break;
+            }
+
+            ret_vec.push(self.parse()?);
+        }
+
+        Ok(ASTNode::Block(ret_vec))
     }
 }
 
@@ -201,6 +221,54 @@ mod tests {
         assert_eq!(
             lex_and_parse(code),
             Ok(super::ASTNode::Tuple(vec![
+                super::ASTNode::Literal(super::LiteralVariant::StringLiteral(
+                    "hello".to_string()
+                )),
+                super::ASTNode::Literal(super::LiteralVariant::StringLiteral(
+                    "world".to_string()
+                )),
+                super::ASTNode::Literal(super::LiteralVariant::IntegerLiteral(
+                    2
+                )),
+                super::ASTNode::Literal(super::LiteralVariant::FloatLiteral(
+                    2.0
+                )),
+                super::ASTNode::Literal(super::LiteralVariant::IntegerLiteral(
+                    -2
+                )),
+                super::ASTNode::Literal(super::LiteralVariant::FloatLiteral(
+                    -2.0
+                )),
+            ]))
+        );
+    }
+
+    #[test]
+    fn test_empty_block() {
+        let code = "{}";
+
+        assert_eq!(
+            lex_and_parse(code),
+            Ok(super::ASTNode::Block(vec![]))
+        );
+    }
+
+    #[test]
+    fn test_literal_block() {
+        let code = r#"
+            {
+                "hello"
+                "world"
+                2
+                2.0
+                -2
+                -2.0
+            }
+        "#;
+
+        assert_eq!(
+            lex_and_parse(code),
+            Ok(super::ASTNode::Block(vec![
                 super::ASTNode::Literal(super::LiteralVariant::StringLiteral(
                     "hello".to_string()
                 )),
