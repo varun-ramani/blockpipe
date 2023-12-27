@@ -27,7 +27,7 @@ fn load_identifier(lex: &mut Lexer<Token>) -> String {
     lex.slice().to_string()
 }
 
-#[derive(Logos, Debug, PartialEq)]
+#[derive(Logos, Debug, PartialEq, Clone)]
 #[logos(skip r" |\t|\n")]
 pub enum Token {
     // starting off with parentheses
@@ -45,6 +45,8 @@ pub enum Token {
     // then the pipe operator
     #[token("|")]
     Pipe,
+    #[token("|*")]
+    PipeStar,
 
     // then the colon
     #[token(":")]
@@ -82,11 +84,14 @@ impl fmt::Display for Token {
             Token::Colon => write!(f, ":"),
             Token::Identifier(s) => write!(f, "IDENTIFIER<{}>", s),
             Token::StringLiteral(s) => write!(f, "\"{}\"", s),
-            Token::BooleanLiteral(b) => write!(f, "{}", if *b {"T"} else {"F"}),
+            Token::BooleanLiteral(b) => {
+                write!(f, "{}", if *b { "T" } else { "F" })
+            }
             Token::IntegerLiteral(i) => write!(f, "{}", i),
             Token::FloatLiteral(fl) => write!(f, "{}", fl),
             Token::Type => write!(f, "type"),
             Token::Paste => write!(f, "paste"),
+            Token::PipeStar => write!(f, "|*"),
         }
     }
 }
@@ -256,11 +261,34 @@ mod tests {
     }
 
     #[test]
-    fn test_mixed_tokens() {
+    fn test_whitespace() {
         let lexed: Vec<(Result<Token, ()>, Span)> =
-            Token::lexer("{type}(T)|-12.34 \"hello\" bruh type moment paste")
-                .spanned()
-                .collect();
+            Token::lexer("hello\tworld\n").spanned().collect();
+
+        assert_eq!(
+            lexed,
+            vec![
+                (Ok(Token::Identifier("hello".to_string())), 0..5),
+                (Ok(Token::Identifier("world".to_string())), 6..11),
+            ]
+        );
+    }
+
+    #[test]
+    fn test_pipestar() {
+        let lexed: Vec<(Result<Token, ()>, Span)> =
+            Token::lexer("|*").spanned().collect();
+
+        assert_eq!(lexed, vec![(Ok(Token::PipeStar), 0..2)]);
+    }
+
+    #[test]
+    fn test_mixed_tokens() {
+        let lexed: Vec<(Result<Token, ()>, Span)> = Token::lexer(
+            "{type}(T)|-12.34 |* \"hello\" bruh type moment paste",
+        )
+        .spanned()
+        .collect();
 
         assert_eq!(
             lexed,
@@ -273,11 +301,12 @@ mod tests {
                 (Ok(Token::RightParen), 8..9),
                 (Ok(Token::Pipe), 9..10),
                 (Ok(Token::FloatLiteral(-12.34)), 10..16),
-                (Ok(Token::StringLiteral("hello".to_string())), 17..24),
-                (Ok(Token::Identifier("bruh".to_string())), 25..29), 
-                (Ok(Token::Type), 30..34),
-                (Ok(Token::Identifier("moment".to_string())), 35..41), 
-                (Ok(Token::Paste), 42..47),
+                (Ok(Token::PipeStar), 17..19),
+                (Ok(Token::StringLiteral("hello".to_string())), 20..27),
+                (Ok(Token::Identifier("bruh".to_string())), 28..32),
+                (Ok(Token::Type), 33..37),
+                (Ok(Token::Identifier("moment".to_string())), 38..44),
+                (Ok(Token::Paste), 45..50)
             ]
         );
     }
