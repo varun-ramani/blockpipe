@@ -1,6 +1,9 @@
 use std::collections::{HashMap, HashSet};
 
-use super::parser::{ASTNode, LiteralVariant};
+use super::{
+    parse::ast::PipeType,
+    parser::{ASTNode, LiteralVariant},
+};
 
 #[derive(Debug, PartialEq, Clone)]
 enum Value {
@@ -12,6 +15,9 @@ enum Value {
 
     // tuples
     Tuple(Vec<Value>),
+
+    // closure
+    Closure(Vec<ASTNode>, HashMap<String, Value>),
 }
 
 /// results and errors of evaluation operations. these types do need to be refined.
@@ -46,6 +52,15 @@ impl Environment {
                 .get_mut(&key)
                 .expect("stack corruption: pop stack frame")
                 .pop();
+
+            if self
+                .keys
+                .get_mut(&key)
+                .expect("stack corruption: pop stack frame")
+                .is_empty()
+            {
+                self.keys.remove(&key);
+            }
         }
 
         Ok(())
@@ -53,10 +68,17 @@ impl Environment {
 
     fn bind(&mut self, key: String, value: Value) {
         // if the current key is already in the stack frame, then we'll remove it
-        if self.stack_frames.last().expect("stack corruption: bind").contains(&key) {
-            self.keys.get_mut(&key).expect("stack corruption: bind").pop();
-        } 
-        
+        if self
+            .stack_frames
+            .last()
+            .expect("stack corruption: bind")
+            .contains(&key)
+        {
+            self.keys
+                .get_mut(&key)
+                .expect("stack corruption: bind")
+                .pop();
+        }
         // otherwise, we'll just go ahead and insert the current key to the stack frame
         else {
             self.stack_frames
@@ -71,6 +93,22 @@ impl Environment {
 
     fn lookup(&self, key: &str) -> Option<Value> {
         Some(self.keys.get(key)?.last()?.clone())
+    }
+
+    /// grab the most recent set of bindings in the environment
+    fn image(&self) -> HashMap<String, Value> {
+        self.keys
+            .iter()
+            .map(|(key, value)| {
+                let cloned_key = key.clone();
+                let cloned_value = value
+                    .last()
+                    .expect("binding without associated values")
+                    .clone();
+
+                (cloned_key, cloned_value)
+            })
+            .collect()
     }
 }
 
@@ -87,13 +125,14 @@ impl Interpreter {
         }
     }
 
-    fn evaluate(&self, node: &ASTNode) -> EvaluateResult {
+    fn evaluate(&mut self, node: &ASTNode) -> EvaluateResult {
         match node {
             ASTNode::Literal(literal) => self.evaluate_literal(literal),
             ASTNode::Tuple(tuple) => self.evaluate_tuple(tuple),
             ASTNode::Identifier(id) => self.evaluate_identifier(id),
-            ASTNode::Binding(_) => {
-                Err(String::from("Binding not defined outside of block"))
+            ASTNode::Block(expressions) => self.evaluate_block(expressions),
+            ASTNode::Binding((identifier, value)) => {
+                self.evaluate_binding(identifier, value)
             }
             _ => Err(String::from("not implemented")),
         }
@@ -108,7 +147,7 @@ impl Interpreter {
         }
     }
 
-    fn evaluate_tuple(&self, tuple: &Vec<ASTNode>) -> EvaluateResult {
+    fn evaluate_tuple(&mut self, tuple: &Vec<ASTNode>) -> EvaluateResult {
         let mut values = Vec::new();
         for node in tuple {
             values.push(self.evaluate(node)?);
@@ -120,6 +159,21 @@ impl Interpreter {
         self.env
             .lookup(identifier)
             .ok_or(format!("Unbound symbol '{}'", identifier))
+    }
+
+    fn evaluate_block(&self, expressions: &Vec<ASTNode>) -> EvaluateResult {
+        let env_image = self.env.image();
+        Ok(Value::Closure(expressions.clone(), env_image))
+    }
+
+    fn evaluate_binding(
+        &mut self,
+        identifier: &String,
+        value: &Box<ASTNode>,
+    ) -> EvaluateResult {
+        let expr_value = self.evaluate(value)?;
+        self.env.bind(identifier.clone(), expr_value);
+        Ok(Value::Tuple(vec![]))
     }
 }
 
@@ -143,8 +197,8 @@ mod tests {
     }
 
     fn lex_parse_evaluate(input: &str) -> EvaluateResult {
-        let interpreter = Interpreter::new(lex_and_parse(input).unwrap());
-        interpreter.evaluate(&interpreter.root_node)
+        let mut interpreter = Interpreter::new(lex_and_parse(input).unwrap());
+        interpreter.evaluate(&interpreter.root_node.clone())
     }
 
     #[test]
@@ -212,7 +266,7 @@ mod tests {
             .env
             .bind("c".to_string(), Value::String("hello".to_string()));
         assert_eq!(
-            interpreter.evaluate(&interpreter.root_node),
+            interpreter.evaluate(&interpreter.root_node.clone()),
             Ok(Value::Tuple(vec![
                 Value::Boolean(true),
                 Value::Integer(1),
@@ -222,7 +276,7 @@ mod tests {
 
         interpreter.env.bind("a".to_string(), Value::Integer(3));
         assert_eq!(
-            interpreter.evaluate(&interpreter.root_node),
+            interpreter.evaluate(&interpreter.root_node.clone()),
             Ok(Value::Tuple(vec![
                 Value::Integer(3),
                 Value::Integer(1),
@@ -232,7 +286,7 @@ mod tests {
 
         interpreter.env.push_stack_frame();
         assert_eq!(
-            interpreter.evaluate(&interpreter.root_node),
+            interpreter.evaluate(&interpreter.root_node.clone()),
             Ok(Value::Tuple(vec![
                 Value::Integer(3),
                 Value::Integer(1),
@@ -247,7 +301,7 @@ mod tests {
         interpreter.env.bind("a".to_string(), Value::Integer(1));
         interpreter.env.bind("b".to_string(), Value::Integer(2));
         assert_eq!(
-            interpreter.evaluate(&interpreter.root_node),
+            interpreter.evaluate(&interpreter.root_node.clone()),
             Ok(Value::Tuple(vec![
                 Value::Integer(1),
                 Value::Integer(2),
@@ -257,13 +311,25 @@ mod tests {
 
         assert_eq!(interpreter.env.pop_stack_frame().ok(), Some(()));
         assert_eq!(
-            interpreter.evaluate(&interpreter.root_node),
+            interpreter.evaluate(&interpreter.root_node.clone()),
             Ok(Value::Tuple(vec![
                 Value::Integer(3),
                 Value::Integer(1),
                 Value::String("hello".to_string())
             ]))
         );
+    }
 
+    #[test]
+    fn test_evaluate_binding() {
+        let mut interpreter =
+            Interpreter::new(lex_and_parse("a: \"bruh\"").unwrap());
+        interpreter.env.push_stack_frame();
+        let root_node = interpreter.root_node.clone();
+        interpreter.evaluate(&root_node);
+        let image = interpreter.env.image();
+
+        assert_eq!(image.len(), 1);
+        assert_eq!(image.get("a").unwrap(), &Value::String("bruh".to_string()));
     }
 }
