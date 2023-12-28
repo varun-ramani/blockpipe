@@ -1,5 +1,3 @@
-use std::mem::discriminant;
-
 use crate::lexer::Token;
 use logos::Span;
 
