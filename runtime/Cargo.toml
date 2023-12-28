@@ -1,10 +1,12 @@
 [package]
-name = "language_impl"
+name = "runtime"
 version = "0.1.0"
 edition = "2021"
+
+[lib]
+name = "runtime"
+crate-type = ["staticlib", "lib"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-indoc = "2.0.3"
-logos = "0.13.0"

@@ -14,6 +14,7 @@ pub enum Value {
 
     // closure
     Closure(Vec<ASTNode>, HashMap<String, Value>),
+    RuntimeInvocation, // special type of closure to invoke runtime calls
 }
 
 /// results and errors of evaluation operations. these types do need to be refined.
@@ -151,11 +152,11 @@ impl Interpreter {
             ASTNode::Block(expressions) => self.evaluate_block(expressions),
             ASTNode::Binding((identifier, value)) => {
                 self.evaluate_binding(identifier, value)
-            }
+            },
             ASTNode::Pipe(expressions, pipe_types) => {
                 self.evaluate_pipe(expressions, pipe_types)
-            }
-            _ => Err(String::from("not implemented")),
+            },
+            _ => panic!("Unimplemented ASTNode variant")
         }
     }
 
@@ -206,19 +207,24 @@ impl Interpreter {
 
         for (expr, pipe_type) in expressions[1..].iter().zip(pipe_types) {
             let closure = self.evaluate(expr)?;
-            curr_value = match pipe_type {
-                PipeType::Standard => {
-                    self.execute_closure(vec![curr_value], &closure)?
-                }
+            let transformed_input = match pipe_type {
+                PipeType::Standard => vec![curr_value.clone()],
                 PipeType::Destructure => {
-                    if let Value::Tuple(values) = curr_value {
-                        self.execute_closure(values, &closure)?
+                    if let Value::Tuple(values) = curr_value.clone() {
+                        values
                     } else {
                         return Err(
                             "Trying to destructure non-tuple value".to_string()
                         );
                     }
                 }
+            };
+            curr_value = match closure {
+                Value::RuntimeInvocation => {
+                    self.execute_closure(transformed_input, &closure)?
+
+                },
+                _ => self.execute_closure(transformed_input, &closure)?
             };
         }
 

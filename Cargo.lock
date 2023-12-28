@@ -109,11 +109,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 
 [[package]]
-name = "frontend_impl"
+name = "frontend"
 version = "0.1.0"
 dependencies = [
  "clap",
- "language_impl",
+ "language",
 ]
 
 [[package]]
@@ -129,11 +129,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2c785eefb63ebd0e33416dfcb8d6da0bf27ce752843a45632a67bf10d4d4b5c4"
 
 [[package]]
-name = "language_impl"
+name = "language"
 version = "0.1.0"
 dependencies = [
  "indoc",
  "logos",
+ "runtime",
 ]
 
 [[package]]
@@ -191,6 +192,10 @@ name = "regex-syntax"
 version = "0.6.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f162c6dd7b008981e4d40210aca20b4bd0f9b60ca9271061b07f78537722f2e1"
+
+[[package]]
+name = "runtime"
+version = "0.1.0"
 
 [[package]]
 name = "strsim"

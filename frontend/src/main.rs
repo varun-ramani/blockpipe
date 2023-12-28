@@ -1,6 +1,6 @@
 use clap::{Parser, ValueEnum};
 use std::{fs, process::{exit, Command}};
-use language_impl::{self, interpret_from_string};
+use language::{self, interpret_from_string};
 
 /// Processes files based on the given command
 #[derive(Parser, Debug)]
@@ -32,19 +32,19 @@ fn main() {
 
     match opts.command {
         Commands::Lex => {
-            let result = language_impl::lex_from_string(&file_data);
+            let result = language::lex_from_string(&file_data);
             println!("{:?}", result);
         }, 
         Commands::Parse => {
-            let result = language_impl::parse_from_string(&file_data);
+            let result = language::parse_from_string(&file_data);
             println!("{:?}", result);
         },
         Commands::Interpret => {
-            let result = language_impl::interpret_from_string(&file_data, None, false);
+            let result = language::interpret_from_string(&file_data, None, false);
             println!("{:?}", result);
         },
         Commands::InterpretExecute => {
-            let result = language_impl::interpret_from_string(&file_data, Some(opts.parameters), true);
+            let result = language::interpret_from_string(&file_data, Some(opts.parameters), true);
             println!("{:?}", result);
         },
         _ => {

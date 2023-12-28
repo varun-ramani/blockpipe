@@ -207,7 +207,6 @@ impl Parser {
             ret_vec.push(self.parse()?);
         }
 
-        println!("successfully exiting parse tuple");
         Ok(ASTNode::Tuple(ret_vec))
     }
 
