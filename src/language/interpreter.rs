@@ -470,7 +470,7 @@ mod tests {
                         $0 |* $1
                     }
 
-                    ((a b) swap) |* do_something
+                    ((a b) swap) |* do_something |* {$0} | {($0 "bruh")}
                 }
 
                 () | main
@@ -478,6 +478,15 @@ mod tests {
         "#;
 
         let mut interpreter = Interpreter::new(lex_and_parse(code).unwrap());
-        println!("{:?}", interpreter.evaluate_from_root());
+        assert_eq!(
+            interpreter.evaluate_from_root(),
+            Ok(Value::Tuple(vec![
+                Value::Tuple(vec![]),
+                Value::Tuple(vec![
+                    Value::Integer(2),
+                    Value::String("bruh".to_string())
+                ])
+            ]))
+        );
     }
 }
