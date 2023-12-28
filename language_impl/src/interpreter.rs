@@ -1,8 +1,8 @@
-use crate::language::parser::*;
+use crate::parser::*;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, PartialEq, Clone)]
-enum Value {
+pub enum Value {
     // primitive values
     Integer(i64),
     Boolean(bool),
@@ -17,8 +17,8 @@ enum Value {
 }
 
 /// results and errors of evaluation operations. these types do need to be refined.
-type EvaluateResult = Result<Value, EvaluationError>;
-type EvaluationError = String;
+pub type EvaluateResult = Result<Value, EvaluationError>;
+pub type EvaluationError = String;
 
 /// the runtime stack
 #[derive(Debug)]
@@ -108,22 +108,34 @@ impl Environment {
     }
 }
 
-struct Interpreter {
+pub struct Interpreter {
     root_node: ASTNode,
     env: Environment,
 }
 
 impl Interpreter {
-    fn new(root_node: ASTNode) -> Interpreter {
+    pub fn new(root_node: ASTNode) -> Interpreter {
         Interpreter {
             root_node,
             env: Environment::new(),
         }
     }
 
-    fn evaluate_from_root(&mut self) -> EvaluateResult {
+    pub fn bind_parameters(&mut self, parameters: Vec<Value>) {
+        for (index, parameter) in parameters.iter().enumerate() {
+            let parameter_id = format!("${}", index);
+            self.env.bind(parameter_id, parameter.clone());
+        }
+
+        self.env.bind("$n".to_string(), Value::Integer(parameters.len() as i64));
+    }
+
+    pub fn evaluate_from_root(&mut self, parameters: Option<Vec<Value>>) -> EvaluateResult {
         self.env.push_stack_frame();
         let root = self.root_node.clone();
+        if let Some(parameters) = parameters {
+            self.bind_parameters(parameters)
+        }
         let result = self.evaluate(&root);
         self.env
             .pop_stack_frame()
@@ -213,7 +225,7 @@ impl Interpreter {
         Ok(curr_value)
     }
 
-    fn execute_closure(
+    pub fn execute_closure(
         &mut self,
         parameters: Vec<Value>,
         closure: &Value,
@@ -229,10 +241,7 @@ impl Interpreter {
             }
 
             // then we'll have to bind arguments in the $0, $1, ... $n fashion.
-            for (index, parameter) in parameters.iter().enumerate() {
-                let parameter_id = format!("${}", index);
-                self.env.bind(parameter_id, parameter.clone());
-            }
+            self.bind_parameters(parameters);
 
             // then we actually run the closure - the value that the last
             // statement evaluates to is the one that we return. note that empty
@@ -258,8 +267,8 @@ mod tests {
     use logos::Span;
 
     use super::*;
-    use crate::language::lexer::*;
-    use crate::language::parser::*;
+    use crate::lexer::*;
+    use crate::parser::*;
 
     fn lex_unconditionally(input: &str) -> Vec<(Token, Span)> {
         lex(input)
@@ -442,7 +451,7 @@ mod tests {
 
         let mut interpreter = Interpreter::new(lex_and_parse(code).unwrap());
         assert_eq!(
-            interpreter.evaluate_from_root(),
+            interpreter.evaluate_from_root(None),
             Ok(Value::Tuple(vec![
                 Value::Integer(0),
                 Value::Integer(1),
@@ -479,7 +488,7 @@ mod tests {
 
         let mut interpreter = Interpreter::new(lex_and_parse(code).unwrap());
         assert_eq!(
-            interpreter.evaluate_from_root(),
+            interpreter.evaluate_from_root(None),
             Ok(Value::Tuple(vec![
                 Value::Tuple(vec![]),
                 Value::Tuple(vec![

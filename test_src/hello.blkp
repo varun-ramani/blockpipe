@@ -1,26 +1,4 @@
-main: {
-    type Person: (
-        height: int
-        name: string
-        favorites: (
-            color: Color
-        )
-    )
-
-    print_int: {(in: (value: int)
-                (out: ()))
-
-        ((value) "print_int") | plz
-    }
-
-    add: {(in: (a: int
-                b: int)
-           out: (int))
-
-        ((a b) "add") | plz
-    }
-
-    (1 2) 
-        |* add 
-        | print_int
+{
+    a: $0
+    b: $1
 }

@@ -1,7 +1,7 @@
 use std::mem::discriminant;
 
-use super::lexer::Token;
 use logos::Span;
+use crate::lexer::Token;
 
 // parse a vector of tokens into an AST
 pub struct Parser {
@@ -237,7 +237,7 @@ impl Parser {
 mod tests {
     use logos::Span;
 
-    use crate::language::lexer::{lex, Token};
+    use crate::lexer::{lex, Token};
 
     use super::ASTNode;
     use super::LiteralVariant;
