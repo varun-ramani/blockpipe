@@ -1,7 +1,7 @@
 use std::mem::discriminant;
 
-use logos::Span;
 use crate::lexer::Token;
+use logos::Span;
 
 // parse a vector of tokens into an AST
 pub struct Parser {
@@ -65,28 +65,6 @@ impl Parser {
                 "Unexpected end of the input".to_string(),
                 last_token_span,
             ))
-        }
-    }
-
-    /// consume_token
-    ///
-    /// Consumes a token with the same discriminant as the provided token.
-    /// Returns parser error with the provided function name if this is not feasible.
-    fn consume_token(
-        &mut self,
-        ast_node_name: &str,
-        expected_tok: &Token,
-    ) -> Result<(), ParserError> {
-        let (tok, span) = &self.tokens[self.curr_index(ast_node_name)?];
-        if discriminant(tok) != discriminant(expected_tok) {
-            Err((
-                ast_node_name.to_string(),
-                format!("Expected '{}'", expected_tok),
-                span.clone(),
-            ))
-        } else {
-            self.index += 1;
-            Ok(())
         }
     }
 
@@ -194,13 +172,13 @@ impl Parser {
     /// Given a situation in which the current token is a left parenthesis,
     /// starts parsing a tuple from that location.
     fn parse_tuple(&mut self) -> ParseResult {
-        self.consume_token("tuple", &Token::LeftParen)?;
+        self.index += 1;
         let mut ret_vec: Vec<ASTNode> = vec![];
         loop {
             if let (Token::RightParen, _) =
                 &self.tokens[self.curr_index("tuple")?]
             {
-                self.consume_token("tuple", &Token::RightParen)?;
+                self.index += 1;
                 break;
             }
 
@@ -215,13 +193,13 @@ impl Parser {
     /// Given a situation in which the current token is a left brace,
     /// starts parsing a block from that location.
     fn parse_block(&mut self) -> ParseResult {
-        self.consume_token("block", &Token::LeftBrace)?;
+        self.index += 1;
         let mut ret_vec: Vec<ASTNode> = vec![];
         loop {
             if let (Token::RightBrace, _) =
                 &self.tokens[self.curr_index("block")?]
             {
-                self.consume_token("block", &Token::RightBrace)?;
+                self.index += 1;
                 break;
             }
 
@@ -598,7 +576,6 @@ mod tests {
                             vec![PipeType::Destructure],
                         ),
                     ])),
-
                 )),
                 ASTNode::Pipe(
                     vec![
