@@ -9,7 +9,7 @@ pub struct Parser {
     index: usize,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum ASTNode {
     Block(Vec<ASTNode>),
     Tuple(Vec<ASTNode>),
@@ -21,7 +21,7 @@ pub enum ASTNode {
     Literal(LiteralVariant),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum LiteralVariant {
     StringLiteral(String),
     IntegerLiteral(i64),
@@ -29,7 +29,7 @@ pub enum LiteralVariant {
     FloatLiteral(f64),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum PipeType {
     Standard,
     Destructure,
