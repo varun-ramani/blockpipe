@@ -1,0 +1,269 @@
+use std::collections::{HashMap, HashSet};
+
+use super::parser::{ASTNode, LiteralVariant};
+
+#[derive(Debug, PartialEq, Clone)]
+enum Value {
+    // primitive values
+    Integer(i64),
+    Boolean(bool),
+    String(String),
+    Float(f64),
+
+    // tuples
+    Tuple(Vec<Value>),
+}
+
+/// results and errors of evaluation operations. these types do need to be refined.
+type EvaluateResult = Result<Value, EvaluationError>;
+type EvaluationError = String;
+
+/// the runtime stack
+#[derive(Debug)]
+struct Environment {
+    stack_frames: Vec<HashSet<String>>,
+    keys: HashMap<String, Vec<Value>>,
+}
+
+impl Environment {
+    fn new() -> Environment {
+        Environment {
+            stack_frames: Vec::new(),
+            keys: HashMap::new(),
+        }
+    }
+
+    /// invoked at the start of a block
+    fn push_stack_frame(&mut self) {
+        self.stack_frames.push(HashSet::new());
+    }
+
+    fn pop_stack_frame(&mut self) -> Result<(), ()> {
+        let last_frame = self.stack_frames.pop().ok_or(())?;
+
+        for key in last_frame {
+            self.keys
+                .get_mut(&key)
+                .expect("stack corruption: pop stack frame")
+                .pop();
+        }
+
+        Ok(())
+    }
+
+    fn bind(&mut self, key: String, value: Value) {
+        // if the current key is already in the stack frame, then we'll remove it
+        if self.stack_frames.last().expect("stack corruption: bind").contains(&key) {
+            self.keys.get_mut(&key).expect("stack corruption: bind").pop();
+        } 
+        
+        // otherwise, we'll just go ahead and insert the current key to the stack frame
+        else {
+            self.stack_frames
+                .last_mut()
+                .expect("stack corruption: bind")
+                .insert(key.clone());
+        }
+
+        // and then we'll unconditionally insert the key
+        self.keys.entry(key).or_insert(Vec::new()).push(value);
+    }
+
+    fn lookup(&self, key: &str) -> Option<Value> {
+        Some(self.keys.get(key)?.last()?.clone())
+    }
+}
+
+struct Interpreter {
+    root_node: ASTNode,
+    env: Environment,
+}
+
+impl Interpreter {
+    fn new(root_node: ASTNode) -> Interpreter {
+        Interpreter {
+            root_node,
+            env: Environment::new(),
+        }
+    }
+
+    fn evaluate(&self, node: &ASTNode) -> EvaluateResult {
+        match node {
+            ASTNode::Literal(literal) => self.evaluate_literal(literal),
+            ASTNode::Tuple(tuple) => self.evaluate_tuple(tuple),
+            ASTNode::Identifier(id) => self.evaluate_identifier(id),
+            ASTNode::Binding(_) => {
+                Err(String::from("Binding not defined outside of block"))
+            }
+            _ => Err(String::from("not implemented")),
+        }
+    }
+
+    fn evaluate_literal(&self, literal: &LiteralVariant) -> EvaluateResult {
+        match literal {
+            LiteralVariant::IntegerLiteral(i) => Ok(Value::Integer(*i)),
+            LiteralVariant::BooleanLiteral(b) => Ok(Value::Boolean(*b)),
+            LiteralVariant::StringLiteral(s) => Ok(Value::String(s.clone())),
+            LiteralVariant::FloatLiteral(f) => Ok(Value::Float(*f)),
+        }
+    }
+
+    fn evaluate_tuple(&self, tuple: &Vec<ASTNode>) -> EvaluateResult {
+        let mut values = Vec::new();
+        for node in tuple {
+            values.push(self.evaluate(node)?);
+        }
+        Ok(Value::Tuple(values))
+    }
+
+    fn evaluate_identifier(&self, identifier: &String) -> EvaluateResult {
+        self.env
+            .lookup(identifier)
+            .ok_or(format!("Unbound symbol '{}'", identifier))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use logos::Span;
+
+    use super::*;
+    use crate::language::lexer::*;
+    use crate::language::parser::*;
+
+    fn lex_unconditionally(input: &str) -> Vec<(Token, Span)> {
+        lex(input)
+            .into_iter()
+            .map(|(tok, span)| (tok.unwrap(), span))
+            .collect()
+    }
+
+    fn lex_and_parse(input: &str) -> Result<ASTNode, ParserError> {
+        Parser::new(lex_unconditionally(input)).parse()
+    }
+
+    fn lex_parse_evaluate(input: &str) -> EvaluateResult {
+        let interpreter = Interpreter::new(lex_and_parse(input).unwrap());
+        interpreter.evaluate(&interpreter.root_node)
+    }
+
+    #[test]
+    fn test_evaluate_integer_literal() {
+        assert_eq!(lex_parse_evaluate("1"), Ok(Value::Integer(1)));
+        assert_eq!(lex_parse_evaluate("-1"), Ok(Value::Integer(-1)));
+    }
+
+    #[test]
+    fn test_evaluate_boolean_literal() {
+        assert_eq!(lex_parse_evaluate("T"), Ok(Value::Boolean(true)));
+        assert_eq!(lex_parse_evaluate("F"), Ok(Value::Boolean(false)));
+    }
+
+    #[test]
+    fn test_evaluate_string_literal() {
+        assert_eq!(
+            lex_parse_evaluate("\"hello world\""),
+            Ok(Value::String(String::from("hello world")))
+        );
+    }
+
+    #[test]
+    fn test_evaluate_float_literal() {
+        assert_eq!(lex_parse_evaluate("1.0"), Ok(Value::Float(1.0)));
+        assert_eq!(lex_parse_evaluate("-1.0"), Ok(Value::Float(-1.0)));
+    }
+
+    #[test]
+    fn test_evaluate_tuple() {
+        assert_eq!(
+            lex_parse_evaluate("(1 2 3)"),
+            Ok(Value::Tuple(vec![
+                Value::Integer(1),
+                Value::Integer(2),
+                Value::Integer(3)
+            ]))
+        );
+        assert_eq!(
+            lex_parse_evaluate("(T F 1 2.0 \"hello world\")"),
+            Ok(Value::Tuple(vec![
+                Value::Boolean(true),
+                Value::Boolean(false),
+                Value::Integer(1),
+                Value::Float(2.0),
+                Value::String(String::from("hello world"))
+            ]))
+        );
+    }
+
+    #[test]
+    fn test_evaluate_identifiers() {
+        let code = r#"
+            (a b c)
+        "#;
+
+        let ast = lex_and_parse(code).unwrap();
+
+        let mut interpreter = Interpreter::new(ast);
+
+        interpreter.env.push_stack_frame();
+        interpreter.env.bind("a".to_string(), Value::Boolean(true));
+        interpreter.env.bind("b".to_string(), Value::Integer(1));
+        interpreter
+            .env
+            .bind("c".to_string(), Value::String("hello".to_string()));
+        assert_eq!(
+            interpreter.evaluate(&interpreter.root_node),
+            Ok(Value::Tuple(vec![
+                Value::Boolean(true),
+                Value::Integer(1),
+                Value::String("hello".to_string())
+            ]))
+        );
+
+        interpreter.env.bind("a".to_string(), Value::Integer(3));
+        assert_eq!(
+            interpreter.evaluate(&interpreter.root_node),
+            Ok(Value::Tuple(vec![
+                Value::Integer(3),
+                Value::Integer(1),
+                Value::String("hello".to_string())
+            ]))
+        );
+
+        interpreter.env.push_stack_frame();
+        assert_eq!(
+            interpreter.evaluate(&interpreter.root_node),
+            Ok(Value::Tuple(vec![
+                Value::Integer(3),
+                Value::Integer(1),
+                Value::String("hello".to_string())
+            ]))
+        );
+
+        interpreter.env.bind("b".to_string(), Value::Boolean(true));
+        interpreter.env.bind("b".to_string(), Value::Boolean(false));
+        interpreter.env.bind("a".to_string(), Value::Boolean(true));
+        interpreter.env.bind("c".to_string(), Value::Integer(3));
+        interpreter.env.bind("a".to_string(), Value::Integer(1));
+        interpreter.env.bind("b".to_string(), Value::Integer(2));
+        assert_eq!(
+            interpreter.evaluate(&interpreter.root_node),
+            Ok(Value::Tuple(vec![
+                Value::Integer(1),
+                Value::Integer(2),
+                Value::Integer(3)
+            ]))
+        );
+
+        assert_eq!(interpreter.env.pop_stack_frame().ok(), Some(()));
+        assert_eq!(
+            interpreter.evaluate(&interpreter.root_node),
+            Ok(Value::Tuple(vec![
+                Value::Integer(3),
+                Value::Integer(1),
+                Value::String("hello".to_string())
+            ]))
+        );
+
+    }
+}
