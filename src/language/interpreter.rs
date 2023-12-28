@@ -1,9 +1,5 @@
+use crate::language::parser::*;
 use std::collections::{HashMap, HashSet};
-
-use super::{
-    parse::ast::PipeType,
-    parser::{ASTNode, LiteralVariant},
-};
 
 #[derive(Debug, PartialEq, Clone)]
 enum Value {
@@ -125,6 +121,16 @@ impl Interpreter {
         }
     }
 
+    fn evaluate_from_root(&mut self) -> EvaluateResult {
+        self.env.push_stack_frame();
+        let root = self.root_node.clone();
+        let result = self.evaluate(&root);
+        self.env
+            .pop_stack_frame()
+            .expect("stack corruption in eval from root");
+        result
+    }
+
     fn evaluate(&mut self, node: &ASTNode) -> EvaluateResult {
         match node {
             ASTNode::Literal(literal) => self.evaluate_literal(literal),
@@ -174,6 +180,45 @@ impl Interpreter {
         let expr_value = self.evaluate(value)?;
         self.env.bind(identifier.clone(), expr_value);
         Ok(Value::Tuple(vec![]))
+    }
+
+    fn execute_closure(
+        &mut self,
+        parameters: Vec<Value>,
+        closure: &Value,
+    ) -> EvaluateResult {
+        if let Value::Closure(c_exps, env_image) = closure {
+            // the closure needs to execute in a new stack frame
+            self.env.push_stack_frame();
+
+            // we'll then bind everything that it needs; conflicting identifiers
+            // from the environment get shadowed.
+            for (id, val) in env_image {
+                self.env.bind(id.clone(), val.clone());
+            }
+
+            // then we'll have to bind arguments in the $0, $1, ... $n fashion.
+            for (index, parameter) in parameters.iter().enumerate() {
+                let parameter_id = format!("${}", index);
+                self.env.bind(parameter_id, parameter.clone());
+            }
+
+            // then we actually run the closure - the value that the last
+            // statement evaluates to is the one that we return. note that empty
+            // blocks just evaluate to the empty tuple.
+            let mut last_value = Value::Tuple(vec![]);
+            for expression in c_exps {
+                last_value = self.evaluate(expression)?;
+            }
+
+            // lastly, we'll have to pop off the stack frame
+            self.env.pop_stack_frame().expect("stack corruption");
+
+            // and we're done
+            Ok(last_value)
+        } else {
+            Err("Passed non-closure for evaluation".to_string())
+        }
     }
 }
 
@@ -331,5 +376,30 @@ mod tests {
 
         assert_eq!(image.len(), 1);
         assert_eq!(image.get("a").unwrap(), &Value::String("bruh".to_string()));
+    }
+
+    #[test]
+    fn test_evaluate_closure() {
+        let code = r#"
+            {
+                a: $0
+                b: $1
+                (a b)
+            }
+        "#;
+
+        let ast = lex_and_parse(code).unwrap();
+        let mut closure_interpreter = Interpreter::new(ast);
+        closure_interpreter.env.push_stack_frame();
+        let root_node = closure_interpreter.root_node.clone();
+        let closure = closure_interpreter.evaluate(&root_node).unwrap();
+        let final_value = closure_interpreter.execute_closure(
+            vec![Value::Integer(1), Value::Boolean(true)],
+            &closure,
+        );
+        assert_eq!(
+            final_value,
+            Ok(Value::Tuple(vec![Value::Integer(1), Value::Boolean(true)]))
+        );
     }
 }
