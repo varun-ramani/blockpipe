@@ -53,7 +53,7 @@ pub enum Token {
     Colon,
 
     // then identifiers
-    #[regex(r#"\$\d+|[a-z|_][a-zA-Z0-9_]*"#, load_identifier)]
+    #[regex(r#"\$(?:\d+|n)|[a-z|_][a-zA-Z0-9_]*"#, load_identifier)]
     Identifier(String),
 
     // then the literals
