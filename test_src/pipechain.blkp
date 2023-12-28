@@ -1,0 +1,17 @@
+{
+    add: {
+        ($1 "add") | plz
+    }
+
+    produce_two_values: {
+        (1 2)
+    }
+
+    swap: {
+        ($1 $0)
+    }   
+
+    () | produce_two_values
+       |* swap
+       |* add
+}
