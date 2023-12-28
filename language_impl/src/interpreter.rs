@@ -240,6 +240,9 @@ impl Interpreter {
                 self.env.bind(id.clone(), val.clone());
             }
 
+            // the closure needs to know how to recurse, so we'll bind it to rec
+            self.env.bind("rec".to_string(), closure.clone());
+
             // then we'll have to bind arguments in the $0, $1, ... $n fashion.
             self.bind_parameters(parameters);
 
