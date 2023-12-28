@@ -53,7 +53,7 @@ pub enum Token {
     Colon,
 
     // then identifiers
-    #[regex(r#"[a-z|_][a-zA-Z0-9_]*"#, load_identifier)]
+    #[regex(r#"\$\d+|[a-z|_][a-zA-Z0-9_]*"#, load_identifier)]
     Identifier(String),
 
     // then the literals
@@ -249,13 +249,14 @@ mod tests {
     #[test]
     fn test_identifier() {
         let lexed: Vec<(Result<Token, ()>, Span)> =
-            Token::lexer("hello world").spanned().collect();
+            Token::lexer("hello $0 world").spanned().collect();
 
         assert_eq!(
             lexed,
             vec![
                 (Ok(Token::Identifier("hello".to_string())), 0..5),
-                (Ok(Token::Identifier("world".to_string())), 6..11),
+                (Ok(Token::Identifier("$0".to_string())), 6..8),
+                (Ok(Token::Identifier("world".to_string())), 9..14),
             ]
         );
     }
