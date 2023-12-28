@@ -140,6 +140,9 @@ impl Interpreter {
             ASTNode::Binding((identifier, value)) => {
                 self.evaluate_binding(identifier, value)
             }
+            ASTNode::Pipe(expressions, pipe_types) => {
+                self.evaluate_pipe(expressions, pipe_types)
+            }
             _ => Err(String::from("not implemented")),
         }
     }
@@ -180,6 +183,34 @@ impl Interpreter {
         let expr_value = self.evaluate(value)?;
         self.env.bind(identifier.clone(), expr_value);
         Ok(Value::Tuple(vec![]))
+    }
+
+    fn evaluate_pipe(
+        &mut self,
+        expressions: &Vec<ASTNode>,
+        pipe_types: &Vec<PipeType>,
+    ) -> EvaluateResult {
+        let mut curr_value = self.evaluate(&expressions[0])?;
+
+        for (expr, pipe_type) in expressions[1..].iter().zip(pipe_types) {
+            let closure = self.evaluate(expr)?;
+            curr_value = match pipe_type {
+                PipeType::Standard => {
+                    self.execute_closure(vec![curr_value], &closure)?
+                }
+                PipeType::Destructure => {
+                    if let Value::Tuple(values) = curr_value {
+                        self.execute_closure(values, &closure)?
+                    } else {
+                        return Err(
+                            "Trying to destructure non-tuple value".to_string()
+                        );
+                    }
+                }
+            };
+        }
+
+        Ok(curr_value)
     }
 
     fn execute_closure(
@@ -401,5 +432,52 @@ mod tests {
             final_value,
             Ok(Value::Tuple(vec![Value::Integer(1), Value::Boolean(true)]))
         );
+    }
+
+    #[test]
+    fn test_evaluate_pipe() {
+        let code = r#"
+            (0 1) | { $0 } |* { ($0 $1 $0 $1) } | { $0 }
+        "#;
+
+        let mut interpreter = Interpreter::new(lex_and_parse(code).unwrap());
+        assert_eq!(
+            interpreter.evaluate_from_root(),
+            Ok(Value::Tuple(vec![
+                Value::Integer(0),
+                Value::Integer(1),
+                Value::Integer(0),
+                Value::Integer(1)
+            ]))
+        );
+    }
+
+    #[test]
+    fn test_basic_blockpipe() {
+        let code = r#"
+            (
+                main: {
+                    swap: {
+                        ($1 $0)
+                    }
+
+                    a: 1
+                    b: 2
+
+                    combined_args: (a b)
+
+                    do_something: {
+                        $0 |* $1
+                    }
+
+                    ((a b) swap) |* do_something
+                }
+
+                () | main
+            )
+        "#;
+
+        let mut interpreter = Interpreter::new(lex_and_parse(code).unwrap());
+        println!("{:?}", interpreter.evaluate_from_root());
     }
 }
