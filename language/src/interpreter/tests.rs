@@ -167,7 +167,7 @@ fn test_evaluate_closure() {
     closure_interpreter.env.push_stack_frame();
     let root_node = closure_interpreter.root_node.clone();
     let closure = closure_interpreter.evaluate(&root_node).unwrap();
-    let final_value = closure_interpreter.execute_closure(
+    let final_value = Interpreter::execute_closure(
         vec![Value::Integer(1), Value::Boolean(true)],
         &closure,
     );
@@ -231,4 +231,231 @@ fn test_basic_blockpipe() {
             ])
         ]))
     );
+}
+
+fn interpreter_with_runtime(code: &str) -> Interpreter {
+    let mut interpreter = Interpreter::new(lex_and_parse(code).unwrap());
+    interpreter.env.push_stack_frame();
+    interpreter
+        .env
+        .bind("plz".to_string(), Value::RuntimeInvocation);
+    interpreter
+}
+
+#[test]
+fn test_runtime_foo() {
+    let code = r#"
+        (() "foo") |* plz
+    "#;
+
+    let mut interpreter = interpreter_with_runtime(code);
+
+    assert_eq!(
+        interpreter.evaluate_from_root(None),
+        Ok(Value::String("bar".to_string()))
+    );
+}
+
+#[test]
+fn test_binop_arith() {
+    let mut interpreter = interpreter_with_runtime(
+        r#"
+        () | {
+            add: {
+                (($0 $1 "+") "binop_arith") |* plz
+            }
+
+            sub: {
+                (($0 $1 "-") "binop_arith") |* plz
+            }
+
+            mul: {
+                (($0 $1 "*") "binop_arith") |* plz
+            }
+
+            div: {
+                (($0 $1 "/") "binop_arith") |* plz
+            }
+
+            data: (1.0 2.0)
+
+            (
+                data |* add
+                data |* sub
+                data |* mul
+                data |* div
+            )
+        }
+    "#,
+    );
+
+    assert_eq!(
+        interpreter.evaluate_from_root(None),
+        Ok(Value::Tuple(vec![
+            Value::Float(3.0),
+            Value::Float(-1.0),
+            Value::Float(2.0),
+            Value::Float(0.5)
+        ]))
+    );
+}
+
+#[test]
+fn test_binop_cmp() {
+    let mut interpreter = interpreter_with_runtime(
+        r#"
+        () | {
+            less_than: {
+                (($0 $1 "<") "binop_cmp") |* plz
+            }
+
+            less_than_equal: {
+                (($0 $1 "<=") "binop_cmp") |* plz
+            }
+
+            greater_than: {
+                (($0 $1 ">") "binop_cmp") |* plz
+            }
+
+            greater_than_equal: {
+                (($0 $1 ">=") "binop_cmp") |* plz
+            }
+
+            equal: {
+                (($0 $1 "==") "binop_cmp") |* plz
+            }
+
+            not_equal: {
+                (($0 $1 "!=") "binop_cmp") |* plz
+            }
+
+            data_int: (2 3)
+            data_float: (2.0 3.0)
+            data_mixed: (2 3.0)
+
+            (
+                data_int |* less_than
+                data_int |* less_than_equal
+                data_int |* greater_than
+                data_int |* greater_than_equal
+                data_int |* equal
+                data_int |* not_equal
+                data_float |* less_than
+                data_float |* less_than_equal
+                data_float |* greater_than
+                data_float |* greater_than_equal
+                data_float |* equal
+                data_float |* not_equal
+                data_mixed |* less_than
+                data_mixed |* less_than_equal
+                data_mixed |* greater_than
+                data_mixed |* greater_than_equal
+                data_mixed |* equal
+                data_mixed |* not_equal
+            )
+        }
+    "#,
+    );
+
+    assert_eq!(
+        interpreter.evaluate_from_root(None),
+        Ok(Value::Tuple(vec![
+            // Comparisons with integers (2, 3)
+            Value::Boolean(true),   // 2 < 3
+            Value::Boolean(true),   // 2 <= 3
+            Value::Boolean(false),  // 2 > 3
+            Value::Boolean(false),  // 2 >= 3
+            Value::Boolean(false),  // 2 == 3
+            Value::Boolean(true),   // 2 != 3
+
+            // Comparisons with floats (2.0, 3.0)
+            Value::Boolean(true),   // 2.0 < 3.0
+            Value::Boolean(true),   // 2.0 <= 3.0
+            Value::Boolean(false),  // 2.0 > 3.0
+            Value::Boolean(false),  // 2.0 >= 3.0
+            Value::Boolean(false),  // 2.0 == 3.0
+            Value::Boolean(true),   // 2.0 != 3.0
+
+            // Heterogeneous comparisons (2, 3.0)
+            Value::Boolean(true),   // 2 < 3.0
+            Value::Boolean(true),   // 2 <= 3.0
+            Value::Boolean(false),  // 2 > 3.0
+            Value::Boolean(false),  // 2 >= 3.0
+            Value::Boolean(false),  // 2 == 3.0
+            Value::Boolean(true)    // 2 != 3.0
+        ]))
+    );
+}
+
+
+#[test]
+fn test_strcat() {
+    let mut interpreter = interpreter_with_runtime(
+        r#"
+        () | {
+            data: ("hello " "world")
+
+            data |* { (($0 $1) "strcat") } |* plz
+        }
+    "#,
+    );
+
+    assert_eq!(
+        interpreter.evaluate_from_root(None),
+        Ok(Value::String("hello world".to_string()))
+    );
+}
+
+#[test]
+fn test_if() {
+    let mut interpreter = interpreter_with_runtime(
+        r#"
+        () | {
+            if: {
+                (($0 $1 $2) "if") |* plz
+            }
+
+            (T { "all good!" } { "oof something ain't right" }) |* if
+        }
+    "#,
+    );
+
+    assert_eq!(interpreter.evaluate_from_root(None), Ok(Value::String("all good!".to_string())));
+}
+
+#[test]
+fn test_recursive_if() {
+    let mut interpreter = interpreter_with_runtime(
+        r#"
+        () | {
+            if: {
+                (($0 $1 $2) "if") |* plz
+            }
+
+            leq: {
+                (($0 $1 "<=") "binop_cmp") |* plz
+            }
+
+            sub: {
+                (($0 $1 "-") "binop_arith") |* plz
+            }
+
+            factorial: {
+                x: $0
+                (
+                    (x 1)   |* leq
+                    {1}
+                    {(x 1)  |* sub
+                            | rec
+                            | {(x $0)}
+                            |* mul}
+                ) |* if
+            }
+
+            5 | factorial
+        }
+    "#,
+    );
+
+    println!("{:?}", interpreter.evaluate_from_root(None));
 }

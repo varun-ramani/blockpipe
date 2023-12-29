@@ -1,7 +1,8 @@
+use super::invoke_runtime;
 use super::Environment;
 use super::Value;
-use crate::parser::{LiteralVariant, ASTNode, PipeType};
 use crate::interpreter::EvaluateResult;
+use crate::parser::{ASTNode, LiteralVariant, PipeType};
 
 pub struct Interpreter {
     pub root_node: ASTNode,
@@ -22,10 +23,14 @@ impl Interpreter {
             self.env.bind(parameter_id, parameter.clone());
         }
 
-        self.env.bind("$n".to_string(), Value::Integer(parameters.len() as i64));
+        self.env
+            .bind("$n".to_string(), Value::Integer(parameters.len() as i64));
     }
 
-    pub fn evaluate_from_root(&mut self, parameters: Option<Vec<Value>>) -> EvaluateResult {
+    pub fn evaluate_from_root(
+        &mut self,
+        parameters: Option<Vec<Value>>,
+    ) -> EvaluateResult {
         self.env.push_stack_frame();
         let root = self.root_node.clone();
         if let Some(parameters) = parameters {
@@ -46,11 +51,11 @@ impl Interpreter {
             ASTNode::Block(expressions) => self.evaluate_block(expressions),
             ASTNode::Binding((identifier, value)) => {
                 self.evaluate_binding(identifier, value)
-            },
+            }
             ASTNode::Pipe(expressions, pipe_types) => {
                 self.evaluate_pipe(expressions, pipe_types)
-            },
-            _ => panic!("Unimplemented ASTNode variant")
+            }
+            _ => panic!("Unimplemented ASTNode variant"),
         }
     }
 
@@ -115,10 +120,28 @@ impl Interpreter {
             };
             curr_value = match closure {
                 Value::RuntimeInvocation => {
-                    self.execute_closure(transformed_input, &closure)?
-
-                },
-                _ => self.execute_closure(transformed_input, &closure)?
+                    if transformed_input.len() != 2 {
+                        return Err(
+                            "Runtime invocation requires 2 arguments - parameters to runtime and runtime call"
+                                .to_string(),
+                        );
+                    } else {
+                        let runtime_parameters = &transformed_input[0];
+                        let runtime_call = &transformed_input[1];
+                        match (runtime_parameters, runtime_call) {
+                            (Value::Tuple(parameters), Value::String(call)) => {
+                                invoke_runtime(parameters.clone(), call.clone())?
+                            },
+                            _ => {
+                                return Err(
+                                    "Runtime parameters should be tuple and runtime call should be string"
+                                        .to_string(),
+                                )
+                            }
+                        }
+                    }
+                }
+                _ => Self::execute_closure(transformed_input, &closure)?,
             };
         }
 
@@ -126,36 +149,39 @@ impl Interpreter {
     }
 
     pub fn execute_closure(
-        &mut self,
         parameters: Vec<Value>,
         closure: &Value,
     ) -> EvaluateResult {
         if let Value::Closure(c_exps, env_image) = closure {
+            // this is hacky, but we'll actually just create a new interpreter
+            // to execute the closure in with a dummy root node
+            let mut new_interpreter = Interpreter::new(ASTNode::Block(vec![]));
+
             // the closure needs to execute in a new stack frame
-            self.env.push_stack_frame();
+            new_interpreter.env.push_stack_frame();
 
             // we'll then bind everything that it needs; conflicting identifiers
             // from the environment get shadowed.
             for (id, val) in env_image {
-                self.env.bind(id.clone(), val.clone());
+                new_interpreter.env.bind(id.clone(), val.clone());
             }
 
             // the closure needs to know how to recurse, so we'll bind it to rec
-            self.env.bind("rec".to_string(), closure.clone());
+            new_interpreter.env.bind("rec".to_string(), closure.clone());
 
             // then we'll have to bind arguments in the $0, $1, ... $n fashion.
-            self.bind_parameters(parameters);
+            new_interpreter.bind_parameters(parameters);
 
             // then we actually run the closure - the value that the last
             // statement evaluates to is the one that we return. note that empty
             // blocks just evaluate to the empty tuple.
             let mut last_value = Value::Tuple(vec![]);
             for expression in c_exps {
-                last_value = self.evaluate(expression)?;
+                last_value = new_interpreter.evaluate(expression)?;
             }
 
             // lastly, we'll have to pop off the stack frame
-            self.env.pop_stack_frame().expect("stack corruption");
+            new_interpreter.env.pop_stack_frame().expect("stack corruption");
 
             // and we're done
             Ok(last_value)
@@ -163,9 +189,4 @@ impl Interpreter {
             Err("Passed non-closure for evaluation".to_string())
         }
     }
-}
-
-#[cfg(test)]
-mod tests {
-    
 }

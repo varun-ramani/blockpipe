@@ -24,10 +24,6 @@ Blocks consume tuples and return tuples. They can be chained together using pipe
 
 *Identifier* $\rightarrow$ **(\[a-z]|\_)(\[a-zA-Z]|\_|\d)***
 
-*TypeTuple* $\rightarrow$ **type** *Tuple*
-
-*Paste* $\rightarrow$ **paste** Expression
-
 *String* $\rightarrow$ Standard C-style String
 
 *Boolean* $\rightarrow$ **T | F**

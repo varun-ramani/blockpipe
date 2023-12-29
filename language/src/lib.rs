@@ -43,7 +43,7 @@ pub fn interpret_from_string(
 
     if execute_root {
         let parameters_vector = transformed_parameters.unwrap_or_default();
-        Ok(interpreter.execute_closure(parameters_vector, &res)?)
+        Ok(Interpreter::execute_closure(parameters_vector, &res)?)
     } else {
         Ok(res)
     }
