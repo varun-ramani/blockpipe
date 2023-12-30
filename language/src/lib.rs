@@ -34,6 +34,11 @@ pub fn interpret_from_string(
         .ok_or("Failed to interpret".to_string())?;
     let mut interpreter = Interpreter::new(ast);
 
+    interpreter.env.push_stack_frame();
+    interpreter
+        .env
+        .bind("plz".to_string(), Value::RuntimeInvocation);
+
     let transformed_parameters = parameters.map(|parameters| {
         parameters
             .into_iter()
