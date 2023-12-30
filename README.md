@@ -9,8 +9,8 @@ them tuples), and the functions shall be known as "blocks".
 
 Blocks consume tuples and return tuples. They can be chained together using pipes. Hence - "BlockPipe".
 
-## Grammar Overview
-*Expression* $\rightarrow$ *Binding* | *Tuple* | *Block* | *Pipe* | *Literal* | *Identifier* | *TypeTuple* | *Paste*
+## Grammar Overview (Interpreted)
+*Expression* $\rightarrow$ *Binding* | *Tuple* | *Block* | *Pipe* | *Literal* | *Identifier* 
 
 *Binding* $\rightarrow$ *Identifier* **:** *Expression*
 
@@ -32,3 +32,19 @@ Blocks consume tuples and return tuples. They can be chained together using pipe
 
 *Integer* $\rightarrow$ **\d\+**
 
+## Syntax Example
+Here's an example of some BlockPipe code! 
+```
+{ 
+  a: 1
+  b: 2
+  c: 3
+
+  print_values: {
+    $0
+  }
+
+  (a b c) | print_values
+}
+```
+It evaluates to `(1 2 3)`
