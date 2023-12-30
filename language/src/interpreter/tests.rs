@@ -440,15 +440,19 @@ fn test_recursive_if() {
                 (($0 $1 "-") "binop_arith") |* plz
             }
 
+            mul: {
+                (($0 $1 "*") "binop_arith") |* plz
+            }
+
             factorial: {
                 x: $0
+                fact_rec: rec
                 (
-                    (x 1)   |* leq
+                    (x 1) |* leq
                     {1}
-                    {(x 1)  |* sub
-                            | rec
-                            | {(x $0)}
-                            |* mul}
+                    {   
+                        (x 1)  |* sub | fact_rec | {(x $0)} |* mul
+                    }
                 ) |* if
             }
 

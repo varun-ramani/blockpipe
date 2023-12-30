@@ -29,26 +29,54 @@ fn binop_arith(parameters: Vec<Value>) -> EvaluateResult {
     };
 
     match (left, right) {
-        (Value::Integer(left), Value::Integer(right)) => 
-            perform_op(*left as f64, *right as f64, op).map(Value::Float),
-        (Value::Float(left), Value::Float(right)) => 
-            perform_op(*left, *right, op).map(Value::Float),
-        (Value::Integer(left), Value::Float(right)) | 
-        (Value::Float(right), Value::Integer(left)) => 
-            perform_op(*left as f64, *right, op).map(Value::Float),
-        _ => Err("binop_arith requires two numbers".to_string()),
+        (Value::Integer(left), Value::Integer(right)) => {
+            perform_arith_int(*left, *right, op).map(Value::Integer)
+        }
+        (Value::Float(left), Value::Float(right)) => {
+            perform_arith_float(*left, *right, op).map(Value::Float)
+        }
+        (Value::Integer(left), Value::Float(right)) => {
+            perform_arith_float(*left as f64, *right, op).map(Value::Float)
+        }
+        (Value::Float(left), Value::Integer(right)) => {
+            perform_arith_float(*left, *right as f64, op).map(Value::Float)
+        }
+        _ => Err("binop_arith requires both operands to be numeric".to_string()),
     }
 }
 
-fn perform_op(left: f64, right: f64, op: &str) -> Result<f64, String> {
+fn perform_arith_int(left: i64, right: i64, op: &str) -> Result<i64, String> {
     match op {
         "+" => Ok(left + right),
         "-" => Ok(left - right),
         "*" => Ok(left * right),
-        "/" => Ok(left / right),
-        _ => Err(format!("Unknown operation: {}", op)),
+        "/" => {
+            if right == 0 {
+                Err("Division by zero".to_string())
+            } else {
+                Ok(left / right)
+            }
+        }
+        _ => Err(format!("Unknown arithmetic operation: {}", op)),
     }
 }
+
+fn perform_arith_float(left: f64, right: f64, op: &str) -> Result<f64, String> {
+    match op {
+        "+" => Ok(left + right),
+        "-" => Ok(left - right),
+        "*" => Ok(left * right),
+        "/" => {
+            if right == 0.0 {
+                Err("Division by zero".to_string())
+            } else {
+                Ok(left / right)
+            }
+        }
+        _ => Err(format!("Unknown arithmetic operation: {}", op)),
+    }
+}
+
 
 
 fn binop_cmp(parameters: Vec<Value>) -> EvaluateResult {
