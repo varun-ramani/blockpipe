@@ -7,7 +7,8 @@ streams and programs.
 The structured datatypes, in turn, are generalizations of tuples (so we'll call
 them tuples), and the functions shall be known as "blocks".
 
-Blocks consume tuples and return tuples. They can be chained together using pipes. Hence - "BlockPipe".
+Blocks consume tuples and return tuples. They can be chained together using pipes. Hence - "BlockPipe". If you want to interactively tour BlockPipe, 
+check out the website at [https://blockpipe.varunramani.com](https://blockpipe.varunramani.com).
 
 ## Grammar Overview (Interpreted)
 *Expression* $\rightarrow$ *Binding* | *Tuple* | *Block* | *Pipe* | *Literal* | *Identifier* 
@@ -47,4 +48,4 @@ Here's an example of some BlockPipe code!
   (a b c) | print_values
 }
 ```
-It evaluates to `(1 2 3)`
+It evaluates to `(1 2 3)`. 
