@@ -146,3 +146,74 @@
     }
   expect:
     (4 2)
+
+- title: Plz "Hello World"
+  content: 
+    plz is a special closure that invokes runtime functionality - things that
+    cannot be implemented in pure BlockPipe. This includes arithmetic,
+    comparisons, I/O, and more. However, a local version of BlockPipe will
+    provide some sort of runtime library such that programmers never have to use
+    plz manually, and following exercises will provide convenient wrapper
+    blocks. Try using the following add function to add 1 and 2.
+  startingCode: |
+    {
+      add: {(($0 $1 "+") "binop_arith") |* plz}
+    }
+  expect:
+    "3"
+
+- title: Conditional Logic
+  content:
+    BlockPipe comes with an "if" statement. It accepts a boolean and two
+    closures - the first for the true case and the second for the false case.
+    Can you correct the pos_neg_zero function so that it correctly outputs each value's parity?
+  startingCode: |
+    {
+      if: {(($0 $1 $2) "if") |* plz}
+      lt: {(($0 $1 "<") "binop_cmp") |* plz}
+
+      pos_neg_zero: {
+        n: $0
+        ((n 0) |* lt
+         {"positive"}
+         {((n 1) |* lt
+           {"negative"}
+           {"zero"}) |* if}) |* if
+      }
+
+      (-1 | pos_neg_zero
+        0 | pos_neg_zero
+        1 | pos_neg_zero)
+    }
+  expect:
+    (negative zero positive)
+
+- title: Recursion
+  content: 
+    To implement recursion in BlockPipe, you could just pass a closure to itself
+    as a parameter using a binding. For convenience, BlockPipe binds the current
+    closure to "rec" instead. Can you make a new recursive factorial
+    implementation using rec, then compute 5 factorial using your own block
+    instead of bad_factorial?
+  startingCode: |
+    {
+      if: {(($0 $1 $2) "if") |* plz}
+      lt: {(($0 $1 "<") "binop_cmp") |* plz}   
+      sub: {(($0 $1 "-") "binop_arith") |* plz}   
+      mul: {(($0 $1 "*") "binop_arith") |* plz}   
+
+      bad_factorial: {
+        fact: $0
+        n: $1
+        ((n 2) |* lt
+         {1}
+         {(n 1) |* sub 
+                |  {(fact $0)}
+                |* fact
+                |  {(n $0)}
+                |* mul}
+        ) |* if
+      }
+
+      (bad_factorial 5) |* bad_factorial
+    }
