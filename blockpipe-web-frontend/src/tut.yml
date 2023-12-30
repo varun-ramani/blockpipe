@@ -1,0 +1,128 @@
+- title: Overview
+  content: 
+    This is an interactive tour of BlockPipe - you don't need to install
+    anything. Each section features a code editor and some sort of exercise. You
+    can execute your code in the browser by just clicking the play button next
+    to each section - if it turns green you can move on, and if it turns orange,
+    you need to correct something. Try it with this editor below - all you have
+    to do for this exercise is click play.
+  startingCode: |
+    {
+      "hello world"
+    }
+  expect: 
+    "hello world"
+- content: 
+    The most basic unit of execution is the block - any piece of code (list of
+    expressions) you surround with curly braces {}. Blocks execute the
+    expressions they contain in order, and return the value the last one
+    evaluates to. Try running this cell - can you add something to make this
+    code print "bye"?
+  expect: 
+    "bye"
+  startingCode: |
+    { 1 2 3 4 }
+  title: 
+    The Block
+- title: The Tuple
+  content: 
+    Tuples are a lot like blocks in the sense that they're basically lists of
+    expressions, except you surround them with parentheses () instead of braces
+    {}. However, (and we'll talk about this later) tuples are *eagerly
+    evaluated* - evaluating a tuple requires evaluating all the expressions
+    inside. Then, the results get packaged into a tuple value and returned. Try
+    running the code below, then add the number 5 to the tuple.
+  startingCode: |
+    { ( 1 2 3 4 ) }
+  expect:
+    "(1 2 3 4 5)"
+- title: Literal Types
+  content: 
+    Literal types are values you explicitly write in your program. You've
+    already seen string literals and integer literals, but BlockPipe also has
+    floats and booleans. Run the code below, then try to negate all the numbers
+    and invert all the booleans (make true false and false true).
+  startingCode: |
+    {
+      (
+        "hello world"
+        1 -2
+        1.1 -4.2
+        F T
+      )
+    }
+  expect:
+    (hello world -1 2 -1.1 4.2 true false)
+
+- title: The Standard Pipe
+  content: 
+    In languages you might be used to, you invoke functions by passing them some
+    arguments - like print("hello"). BlockPipe is no different, except you pass
+    arguments by "piping" them. The "standard" pipe operator | binds whatever
+    you pass it to the first argument $0. Run the code below, then try changing
+    "hello" to the true boolean.
+  startingCode: |
+    { 
+      "hello" | {$0}
+    }
+  expect:
+    "true"
+
+- title: The Destructure Pipe
+  content: 
+    What if you want to bind multiple arguments at the same time? The
+    destructure pipe |* accepts a tuple as input, then binds the x'th value it
+    contains to the x'th argument $x. Try running the code below - you'll notice
+    it errors out. Change only the | to make it run.
+  startingCode: |
+    { 
+      ( "hello" "world" ) | {
+        $0
+        $1
+      }
+    }
+  expect:
+    "world"
+
+- title: The Closure
+  content: 
+    Blocks are also expressions, and they evaluate to something called a
+    "closure". This is a concept from functional programming that describes code
+    that has been packaged along with any external variables it depends on. So
+    for instance, if a block refers to a variable 'x', then when the block is
+    evaluated, BlockPipe will grab the value of 'x' from the environment and
+    store it along with the block's code to form a closure. But the takeaway is
+    that when you pipe data to a block, BlockPipe first evaluates the block to
+    create a closure, then executes the closure using whatever you pipe to it.
+    Can you make the code from the previous exercise return a closure?
+  startingCode: |
+    { 
+      ( "hello" "world" ) | {
+        $0
+        $1
+      }
+    }
+  expect:
+    "<closure>"
+
+- title: The Binding
+  content: 
+    We'd like to be able to assign names to values (including closures) so we
+    can "save" them and refer to them later. The code below shows how you could
+    bind a few example identifiers - can you bind a symbol 'c' to the value 3
+    and change the code so it produces (1 2 3)? Hint - you'll need to create a
+    new binding, edit an existing binding, edit the code inside print_values,
+    and add c to a tuple.
+  startingCode: |
+    { 
+      a: 1
+      b: 4
+
+      print_values: {
+        $0
+      }
+
+      (a b) | print_values
+    }
+  expect:
+    (1 2 3)

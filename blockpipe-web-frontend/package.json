@@ -10,15 +10,22 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/iosevka": "^5.0.7",
+    "@fontsource/iosevka-curly": "^5.0.7",
+    "@fontsource/jetbrains-mono": "^5.0.18",
     "@mantine/core": "^7.3.2",
     "@mantine/hooks": "^7.3.2",
     "@monaco-editor/react": "^4.6.0",
+    "@tabler/icons-react": "^2.44.0",
     "blockpipe-language": "file:../language/pkg",
     "monaco-editor": "^0.45.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "vite-plugin-yaml": "^1.0.5",
+    "yaml": "^2.3.4"
   },
   "devDependencies": {
+    "@modyfi/vite-plugin-yaml": "^1.0.4",
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
     "@typescript-eslint/eslint-plugin": "^6.14.0",
@@ -27,6 +34,9 @@
     "eslint": "^8.55.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
+    "postcss": "^8.4.32",
+    "postcss-preset-mantine": "^1.12.2",
+    "postcss-simple-vars": "^7.0.1",
     "typescript": "^5.2.2",
     "vite": "^5.0.10",
     "vite-plugin-top-level-await": "^1.4.1",
