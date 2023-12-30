@@ -34,7 +34,7 @@ export default function App() {
                         <Stack>
                             <Title order={2}>An Interactive Tour of BlockPipe</Title>
                             <Title order={4}>A functional language built around the pipe operator</Title>
-                            <Text>Scroll to start.</Text>
+                            <Text>Scroll to start. Best viewed on desktop.</Text>
                         </Stack>
                     </Group>
 

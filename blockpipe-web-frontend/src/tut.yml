@@ -91,10 +91,10 @@
     that has been packaged along with any external variables it depends on. So
     for instance, if a block refers to a variable 'x', then when the block is
     evaluated, BlockPipe will grab the value of 'x' from the environment and
-    store it along with the block's code to form a closure. But the takeaway is
-    that when you pipe data to a block, BlockPipe first evaluates the block to
-    create a closure, then executes the closure using whatever you pipe to it.
-    Can you make the code from the previous exercise return a closure?
+    store it along with the block's code to form a closure. Piping data to a
+    block triggers closure creation and execution. The root block is
+    auto-evaluated and its closure auto-executed. Can you make the code from the
+    previous exercise return a closure? 
   startingCode: |
     { 
       ( "hello" "world" ) | {
@@ -126,3 +126,23 @@
     }
   expect:
     (1 2 3)
+
+- title: Exercise with Binding/Pipes
+  content: 
+    It's time to combine what you've learned. The code below is supposed to
+    create a function called "swap", feed integers named "a" and "b" to it, and
+    result in (4 2) being printed. Can you use binding and some sort of pipe to
+    make this happen? You should not delete any existing code.
+  startingCode: |
+    { 
+      2
+      4
+
+      {
+        ($1 $0)
+      }
+
+      (a b)
+    }
+  expect:
+    (4 2)
