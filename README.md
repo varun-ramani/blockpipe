@@ -1,4 +1,4 @@
-# BlockPipe
+![Logo](./branding/logo-long.png)
 
 BlockPipe is an exploration of what could happen if the UNIX pipe operator was
 generalized to operate on structured datatypes and functions, instead of text
